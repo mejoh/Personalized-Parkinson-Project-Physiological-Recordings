@@ -1,3 +1,7 @@
+%% Description: ChangeMarkersAllSubs_Motor.m
+% 
+
+
 %% ToDo
 %Improve descriptions
 %Improve error handling
@@ -31,7 +35,7 @@ inputTable = splitvars(table([allSubs, allFiles]), 'Var1');
 
 %Settings
 settings.TR         = 1;                                                                %double with TR time in seconds
-settings.RawFolder  = fullfile(pfProject, "3022026.01", "raw");                             %We count the number of images in the raw folder
+settings.RawFolder  = fullfile(pfProject, "3024006.01", "raw");                             %We count the number of images in the raw folder
 settings.ScanFolder = fullfile("ses-mri01", "*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
 settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "corrected");                 %Output folder for the new files
 settings.EEGfolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "data");                         %Raw folder containing the .eeg and .vhdr files
