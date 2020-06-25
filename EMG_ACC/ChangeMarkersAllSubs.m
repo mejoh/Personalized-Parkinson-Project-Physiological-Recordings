@@ -28,22 +28,25 @@ end
 % inputTable = splitvars(table([allSubs, allFiles]), 'Var1');
 
 Task = "motor";         % Which task would you like to process?
-ProjectNr = "3024006.01";           % Which project would you like to process?
+ProjectNr = "3022026.01";           % Which project would you like to process?
 fprintf("Processing physiological data from %s task in project %s\n", Task, ProjectNr)
 
 pDir = fullfile(pfProject, ProjectNr);
 pBIDSDir = char(fullfile(pDir, "bids"));
 Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task
+SubBackup = Sub;
 Files = cell(numel(Sub),1);
 Sel = true(size(Sub));
 if strcmp(ProjectNr, "3022026.01")      % ParkinsonOpMaat
-    for n = 1:numel(Sub)            % Exclude subjects with missing vmrk file
+    for n = 1:numel(Sub)            % Check for subjects with missing vmrk file
         vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{n} '*task*.vmrk']));
         if isempty(vmrkPath)
             fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
             Sel(n) = false;
         end
     end
+    Files   = Files(Sel);       % Exclude subjects with missing vmrk file
+    Sub     = Sub(Sel);
     for i = 1:numel(Sub)            % Collect vmrk files
         vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{i} '*task*.vmrk']));
         Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name]));
@@ -51,11 +54,13 @@ if strcmp(ProjectNr, "3022026.01")      % ParkinsonOpMaat
 elseif strcmp(ProjectNr, "3024006.01")      % ParkinsonInToom
     for n = 1:numel(Sub)
         vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{n}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
-        if isempty(vmrkPath)            % Exclude subjects with missing vmrk file
+        if isempty(vmrkPath)            % Check for subjects with missing vmrk file
             fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
             Sel(n) = false;
         end
     end
+    Files   = Files(Sel);       % Exclude subjects with missing vmrk file
+    Sub     = Sub(Sel);
     for i = 1:numel(Sub)            % Collect vmrk files
         vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{i}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
         Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
@@ -232,8 +237,12 @@ fclose(cDataFile);
 delete(tempDataFile)
 
 %Copy .eeg and .vhdr files
-idx = contains(settings.EEGfolder, extractBefore(cFileID, '_'));
-cBase = fullfile(settings.EEGfolder(idx), cFileID);
+if contains(settings.EEGfolder, '3022026.01')           % Because POM and PIT organizes emg data differently, we need different settings here
+    cBase = fullfile(settings.EEGfolder(1), cFileID);
+elseif contains(settings.EEGfolder, '3024006.01')
+    idx = contains(settings.EEGfolder, extractBefore(cFileID, '_'));
+    cBase = fullfile(settings.EEGfolder(idx), cFileID);
+end
 cTarget = fullfile(settings.NewFolder, cFileID);
 copyfile(strcat(cBase, ".eeg"), strcat(cTarget, ".eeg")); %.eeg
 copyfile(strcat(cBase, ".vhdr"), strcat(cTarget, ".vhdr")); %.vhdr
