@@ -3,11 +3,6 @@
 %Improve error handling
 
 addpath('/home/common/matlab/spm12')
-addpath('/home/common/matlab/fieldtrip')
-ft_defaults
-
-
-x = ft_read_mri('/project/3024006.01/bids/sub-PIT1MR0123513/func/sub-PIT1MR0123513_task-rest_acq-MB8_run-1_bold.nii.gz');
 
 %% OS CHECK
 if ispc
@@ -32,52 +27,66 @@ end
 % allSubs = extractBetween(allFiles, strcat("data", filesep), "_task");
 % inputTable = splitvars(table([allSubs, allFiles]), 'Var1');
 
-PITRAWDir = '/project/3024006.01/raw';
-PITBIDSDir = '/project/3024006.01/bids';
-SubPIT = spm_BIDS(PITBIDSDir, 'subjects', 'task', 'motor')';
-FilesPIT = cell(numel(SubPIT),1);
-for i = 1:numel(SubPIT)
-    vmrkPath = dir(fullfile(PITRAWDir, ['sub-' SubPIT{i}], 'ses-mri01', '*motor_physio', '*task*.vmrk'));
-    FilesPIT{i} = string(join([{vmrkPath.folder}', {vmrkPath.name}'], filesep));
+Task = "motor";
+ProjectNr = "3024006.01";
+fprintf("Processing physiological data from %s task in project %s\n", Task, ProjectNr)
+
+pDir = fullfile(pfProject, ProjectNr);
+pBIDSDir = char(fullfile(pDir, "bids"));
+Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';
+Files = cell(numel(Sub),1);
+Sel = true(size(Sub));
+if strcmp(ProjectNr, "3022026.01")
+    for n = 1:numel(Sub)
+        vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{n} '*task*.vmrk']));
+        if isempty(vmrkPath)
+            fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
+            Sel(n) = false;
+        end
+    end
+    for i = 1:numel(Sub)
+        vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{i} '*task*.vmrk']));
+        Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name]));
+    end
+elseif strcmp(ProjectNr, "3024006.01")
+    for n = 1:numel(Sub)
+        vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{n}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
+        if isempty(vmrkPath)
+            fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
+            Sel(n) = false;
+        end
+    end
+    for i = 1:numel(Sub)
+        vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{i}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
+        Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
+    end
+else
+    fprintf("Project number not recognized as either PIT or POM, aborting...\n")
+    return
 end
-SubPIT = string(SubPIT);
-FilesPIT = string(FilesPIT);
-inputTable = splitvars(table([SubPIT, FilesPIT]), 'Var1');
-inputTable = inputTable(2,:);
 
-% POMRAWDir = '/project/3022026.01.01/raw';
-% POMBIDSDir = '/project/3022026.01/bids';
-% SubPOM = spm_BIDS(POMBIDSDir, 'subjects', 'task', 'motor');
-% FilesPOM = cell(1,numel(SubPOM));
-% for i = 1:numel(SubPOM)
-%     vmrkPath = dir(fullfile(POMRAWDir, 'DataEMG', ['sub-' SubPOM{i}], '*task*.vmrk'));
-%     FilesPIT{i} = string(join([{vmrkPath.folder}', {vmrkPath.name}'], filesep));
-% end
-% SubPOM = string(SubPOM);
-% FilesPOM = string(FilesPOM);
-
-% Subs = [SubPIT SubPOM];
-% Files = [FilesPIT FilesPOM];
-% fprintf('Number of subjects processed: %i\n', numel(Subs))
+Sub = string(Sub);
+Files = string(Files);
+inputTable = splitvars(table([Sub, Files]), 'Var1');
+inputTable = inputTable(8:11,:);
 
 %For reward scans (COMMENT OUT IF YOU DON'T WORK ON REWARD)
 % subTable = getSubjects("PD_on_study");
 % inputTable = rowfun(@(cSub) getRewardInputTable(cSub, pfProject), subTable(:, "SubjectNumber"), 'NumOutputs', 2);
 
 %Settings
-% settings.TR         = 1;                                                                %double with TR time in seconds
-% settings.RawFolder  = fullfile(pfProject, "3024006.01", "raw");                             %We count the number of images in the raw folder
-% settings.ScanFolder = fullfile("ses-mri01", "*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-% settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "corrected");                 %Output folder for the new files
-% settings.EEGfolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "data");                         %Raw folder containing the .eeg and .vhdr files
-% settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
-
+if strcmp(Task, "motor")
 settings.TR         = 1;                                                                %double with TR time in seconds
-settings.RawFolder  = PITRAWDir;                             %We count the number of images in the raw folder
+settings.RawFolder  = fullfile(pDir, 'raw');                             %We count the number of images in the raw folder
 settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "corrected");                 %Output folder for the new files
-settings.EEGfolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "test", "data");                         %Raw folder containing the .eeg and .vhdr files
+settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
 settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
+elseif strcmp(Task, "reward")
+    return
+elseif strcmp(Task, "rest")
+    return
+end
 
 %% Execute & save log
 logFile.LogTable = rowfun(@(cSub, oldFile) ChangeMarkersEMG(cSub, oldFile, settings), inputTable, ...
@@ -223,7 +232,8 @@ fclose(cDataFile);
 delete(tempDataFile)
 
 %Copy .eeg and .vhdr files
-cBase = fullfile(settings.EEGfolder, cFileID);
+idx = contains(settings.EEGfolder, extractBefore(cFileID, '_'));
+cBase = fullfile(settings.EEGfolder(idx), cFileID);
 cTarget = fullfile(settings.NewFolder, cFileID);
 copyfile(strcat(cBase, ".eeg"), strcat(cTarget, ".eeg")); %.eeg
 copyfile(strcat(cBase, ".vhdr"), strcat(cTarget, ".vhdr")); %.vhdr
