@@ -27,36 +27,36 @@ end
 % allSubs = extractBetween(allFiles, strcat("data", filesep), "_task");
 % inputTable = splitvars(table([allSubs, allFiles]), 'Var1');
 
-Task = "motor";
-ProjectNr = "3024006.01";
+Task = "motor";         % Which task would you like to process?
+ProjectNr = "3024006.01";           % Which project would you like to process?
 fprintf("Processing physiological data from %s task in project %s\n", Task, ProjectNr)
 
 pDir = fullfile(pfProject, ProjectNr);
 pBIDSDir = char(fullfile(pDir, "bids"));
-Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';
+Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task
 Files = cell(numel(Sub),1);
 Sel = true(size(Sub));
-if strcmp(ProjectNr, "3022026.01")
-    for n = 1:numel(Sub)
+if strcmp(ProjectNr, "3022026.01")      % ParkinsonOpMaat
+    for n = 1:numel(Sub)            % Exclude subjects with missing vmrk file
         vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{n} '*task*.vmrk']));
         if isempty(vmrkPath)
             fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
             Sel(n) = false;
         end
     end
-    for i = 1:numel(Sub)
+    for i = 1:numel(Sub)            % Collect vmrk files
         vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{i} '*task*.vmrk']));
         Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name]));
     end
-elseif strcmp(ProjectNr, "3024006.01")
+elseif strcmp(ProjectNr, "3024006.01")      % ParkinsonInToom
     for n = 1:numel(Sub)
         vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{n}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
-        if isempty(vmrkPath)
+        if isempty(vmrkPath)            % Exclude subjects with missing vmrk file
             fprintf("Skipping sub-%s with no vmrk file\n", Sub{n})
             Sel(n) = false;
         end
     end
-    for i = 1:numel(Sub)
+    for i = 1:numel(Sub)            % Collect vmrk files
         vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' Sub{i}], 'ses-mri01', ['*' char(Task) '_physio'], '*task*.vmrk'));
         Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
     end
@@ -67,8 +67,8 @@ end
 
 Sub = string(Sub);
 Files = string(Files);
-inputTable = splitvars(table([Sub, Files]), 'Var1');
-inputTable = inputTable(8:11,:);
+inputTable = splitvars(table([Sub, Files]), 'Var1');        % Generate an input table
+inputTable = inputTable(8:11,:);            % Subset for testing
 
 %For reward scans (COMMENT OUT IF YOU DON'T WORK ON REWARD)
 % subTable = getSubjects("PD_on_study");
@@ -76,12 +76,12 @@ inputTable = inputTable(8:11,:);
 
 %Settings
 if strcmp(Task, "motor")
-settings.TR         = 1;                                                                %double with TR time in seconds
-settings.RawFolder  = fullfile(pDir, 'raw');                             %We count the number of images in the raw folder
-settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
-settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
-settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
+    settings.TR         = 1;                                                                %double with TR time in seconds
+    settings.RawFolder  = fullfile(pDir, 'raw');                             %We count the number of images in the raw folder
+    settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+    settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
+    settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
 elseif strcmp(Task, "reward")
     return
 elseif strcmp(Task, "rest")
