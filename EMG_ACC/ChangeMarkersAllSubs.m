@@ -27,13 +27,13 @@ end
 % allSubs = extractBetween(allFiles, strcat("data", filesep), "_task");
 % inputTable = splitvars(table([allSubs, allFiles]), 'Var1');
 
-Task = "motor";         % Which task would you like to process?
-ProjectNr = "3022026.01";           % Which project would you like to process?
+Task = "reward";         % Which task would you like to process? (motor / reward / rest)
+ProjectNr = "3024006.01";           % Which project would you like to process? (3022026.01 / 3024006.01)
 fprintf("Processing physiological data from %s task in project %s\n", Task, ProjectNr)
 
 pDir = fullfile(pfProject, ProjectNr);
 pBIDSDir = char(fullfile(pDir, "bids"));
-Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task
+Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task. This will take a while...
 SubBackup = Sub;
 Files = cell(numel(Sub),1);
 Sel = true(size(Sub));
@@ -49,7 +49,7 @@ if strcmp(ProjectNr, "3022026.01")      % ParkinsonOpMaat
     Sub     = Sub(Sel);
     for i = 1:numel(Sub)            % Collect vmrk files
         vmrkPath = dir(fullfile(pDir, 'DataEMG', [Sub{i} '*task*.vmrk']));
-        Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name]));
+        Files{i} = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name]));  %Note that I only take the last file (if there are multiple i.g. task1, task2)
     end
 elseif strcmp(ProjectNr, "3024006.01")      % ParkinsonInToom
     for n = 1:numel(Sub)
@@ -88,8 +88,20 @@ if strcmp(Task, "motor")
     settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
 elseif strcmp(Task, "reward")
-    return
+    settings.TR         = 2.24;                                                                %double with TR time in seconds
+    settings.RawFolder  = fullfile(pDir, 'raw');                             %We count the number of images in the raw folder
+    settings.ScanFolder = fullfile("ses-mri01", "0*cmrr_3.5iso_me5_TR2240", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+    settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
+    settings.NumberOfEchos = 5;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
 elseif strcmp(Task, "rest")
+%     settings.TR         = 0.735;                                                                %double with TR time in seconds
+%     settings.RawFolder  = fullfile(pDir, 'raw');                             %We count the number of images in the raw folder
+%     settings.ScanFolder = fullfile("ses-mri01", "0*MB8_fMRI_fov210_2.4mm_ukbiobank", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+%     settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+%     settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
+%     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1. 
+    fprintf("Rest task is not supported yet, aborting...\n")
     return
 end
 
