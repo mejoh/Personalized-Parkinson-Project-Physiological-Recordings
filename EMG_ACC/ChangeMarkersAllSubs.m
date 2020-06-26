@@ -33,7 +33,7 @@ fprintf("Processing physiological data from %s task in project %s\n", Task, Proj
 
 pDir = fullfile(pfProject, ProjectNr);
 pBIDSDir = char(fullfile(pDir, "bids"));
-Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task. This will take a while...
+Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)';        % Get list of subject who have done the chosen task. This will take a while (we're talking several minutes)...
 SubBackup = Sub;
 Files = cell(numel(Sub),1);
 Sel = true(size(Sub));
