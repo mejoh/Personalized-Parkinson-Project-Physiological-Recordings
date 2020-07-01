@@ -1,0 +1,256 @@
+function pf_emg_seltremorfreq(conf)
+%
+% pf_emg_seltremor(conf) analyses EMG data exported by BrainVision analyzer
+% (rectified signal) in the file formats .eeg, .vmrk, .vhdr; It uses
+% fieldtrip (pre-processing and frequency analysis) to proces the data and 
+% plot (and save) the powerspectra. Make sure you marked the start of the
+% EMG signal in your .vmrk file (change it into S,S). NB: this should be
+% one scan BEFORE the actual first scan, as the hanning taper used will
+% result in nans the first 0.5 tapers (so we select the next scan). 
+%
+% It is an interactive analysis, where the user must specify: (1) at which
+% frequency the relevant peak is (2) which channel will be used for further
+% analysis. In general this will be the channel with the most prominent
+% peak in the range of 4-6 Hz (for tremor analysis).
+%
+% Change the configuration structure below so it matches your specific
+% dataset. You might want to leave the FieldTrip configuration alone, since  
+% all our subsequent fMRI analyses have only been tested with this specific
+% configuration.
+% 
+% See also http://fieldtrip.fcdonders.nl/walkthrough
+
+% Based on a script by Rick Helmich (see MT_EMG_to_regressor_RS)
+% Edited by Michiel Dirkx, 2014
+% Contact michieldirkx@gmail.com
+% -------------------------------------------------------------------------
+
+%% Warming Up
+%--------------------------------------------------------------------------
+
+fprintf('%s\n\n','% ------ Executing Interactive Tremor Selection ------ %')
+
+%--------------------------------------------------------------------------
+
+%% Configuration
+%--------------------------------------------------------------------------
+
+if nargin < 1
+
+clc    
+    
+% --- Directories --- %
+
+conf.dir.root   =   '/home/action/micdir/data/EMG/Cohort 2 - relaunched/Brainvision/EMG_Export';                    % Directory of your exported Brainvision files (.eeg,.vmrk and .vhdr)
+conf.dir.save   =   '/home/action/micdir/data/EMG/Cohort 2 - relaunched/FieldTrip/EMG PowerSpectr try-new-script';  % Directory where your data (power spectrum illustration and mat file containing EMG time course) will be saved
+
+% --- Subjects --- %
+
+conf.sub.name   = {'p07';'p10';'p41';'p39'};    % Specify your subjects in a cell structure. 
+conf.sub.sess   = {'OFF';'ON'};                 % Specify the session in a cell structure (even if you have only one session)
+
+sel             = 3:4;                    
+conf.sub.name   = conf.sub.name(sel);     % Select the subjects
+
+% --- File information --- %
+
+conf.file.name     = '/CurSub/&/CurSess/';   % The easiest way is to name your files: '<subject>_<session>.*' and then enter here '/CurSub/&/CurSess/' (the script will use pf_findfile to retrieve the files corresponding to the current subject/session within the loop)
+conf.file.tr       = 1.82;                   % repetition time (TR) of your scan sequence
+conf.file.nscan    = 274;                    % Amount of scans in your dataset (you can use 'intersel' to manually enter nScans for each subject/session (useful when you have different scan lengths))
+conf.file.tscscan  = 0;                      % Slice used for Time Slice correction (relative to slice 1, so if corrected to slice 1 -> 0). If you did not use SLC, you have to choose the slices yourself (use the ones where your ROI's are)
+conf.file.tscorder = 'ascending';            % Right now the script can only handle 'ascending' scan sequences. If you don't use STC, it shouldn't matter though.
+conf.file.nslices  = 35;                     % Amount of slices of your scan sequence
+conf.file.timedat  = 0.1;                    % Time of one datapoint in your EMG files (in seconds, i.e. 1 datapoint is 1 second)
+
+%=== FieldTrip Configuration ===%
+
+% --- Define Trial --- %
+
+cfg_trial.trialdef.eventtype  =   'S';   % Start of your trial, this is why you have to change the first marker in the *.vmrk file into S,S
+cfg_trial.trialdef.stim       =     1;   % Only 1 stimulus
+cfg_trial.trialdef.prestim    =     0;   % start of time course before the S,S (usually 0s)
+cfg_trial.trialdef.poststim   =  'calc'; % defines the end of the trial (relative to start of trial; fill in 'calc' to calculate it based on TR, nScans and nSlices) 
+
+% --- Preprocessing --- %
+
+cfg_preproc.hpfilter     =  'yes';  % High pass filter
+cfg_preproc.hpfreq       =      1;  % Because of drop off effect in EMG signal
+
+% --- Frequency Analysis --- %
+
+cfg_freq.method   = 'mtmconvol';          % Select method (choose 'mtmconvol')
+cfg_freq.output   = 'pow';                % power spectrum (choose 'pow')
+cfg_freq.taper    = 'hanning';            % Windowing (because cut-off frequency), (Choose 'hanning' for low frequency)
+cfg_freq.foi      =  1:0.5:20;            % frequency range you are interested in (usually 1:0.5:20, make sure you at least include 3-8 Hz)   
+cfg_freq.numfoi   = length(cfg_freq.foi); % length of the frequency range
+ 
+cfg_freq.t_ftimwin  = repmat(2,1,length(cfg_freq.foi));    % Wavelet length (seconds; 1 wavelet per frequency) (Default = 2)
+cfg_freq.tapsmofrq  = repmat(0.5,1,length(cfg_freq.foi));  % Frequency smoothing (Choose 0.5 Hz, that is, if your frequency range is in steps of 0.5 Hz)
+cfg_freq.toi        = 'orig';                              % Time on which the frequency analysis should be centered (Choose 'orig', this uses the original timeline) 
+cfg_freq.pad        = 'maxperlen';                         % Padding (use 'maxperlen')
+cfg_freq.keeptrials = 'no';                                % Delete trials
+cfg_freq.keeptapers = 'no';                                % Delete tapers
+
+end
+
+%--------------------------------------------------------------------------
+
+%% Initialization
+%--------------------------------------------------------------------------
+
+if ~exist(conf.dir.save,'dir'); mkdir(conf.dir.save); end        % Make save directory if necessary
+
+nSub    =   length(conf.sub.name);
+nSess   =   length(conf.sub.sess);
+
+if strcmp(conf.file.tscorder,'ascending') == 0           % Just a reminder that your slice acquisiion has to be ascending for this script
+    disp('You entered that the TSC order is not ascending, unfortunately this script can only handle ascending orders; now entering debug mode')
+    keyboard
+end
+
+%--------------------------------------------------------------------------
+
+%% Data analysis
+%--------------------------------------------------------------------------
+
+startTR  = conf.file.tr + (conf.file.tr/conf.file.nslices * conf.file.tscscan);        % Scan acquisition time after Slice Time Correction (assuming it's ascending and you start a scan too early)
+fprintf('%s\n',['Selection of EMG Time Courses will be ' num2str(startTR) ' seconds after the S,S marker\n'])
+
+for a = 1:nSub
+    
+    CurSub = conf.sub.name{a};
+    
+    for b = 1:nSess
+        
+        CurSess =   conf.sub.sess{b};
+        fprintf('%s\n',['- Working on ' CurSub '-' CurSess])
+        
+        % --- Retrieve Brainvision files --- %
+        
+        CurDat  =   pf_findfile(conf.dir.root,[conf.file.name '/&/.eeg/'],'conf',conf,'CurSub',a,'CurSess',b,'fullfile');
+        CurHdr  =   pf_findfile(conf.dir.root,[conf.file.name '/&/.vhdr/'],'conf',conf,'CurSub',a,'CurSess',b,'fullfile');
+        CurMrk  =   pf_findfile(conf.dir.root,[conf.file.name '/&/.vmrk/'],'conf',conf,'CurSub',a,'CurSess',b,'fullfile');
+        
+        % --- Determine the exact EMG Time Course --- %
+        
+        if strcmpi(conf.file.nscan,'intersel') || exist('nsflag','var')
+            nsflag          = 1;
+            conf.file.nscan = input('-- Enter the number of scans for this subject/session: ');
+        end
+       
+        if strcmpi(cfg_trial.trialdef.poststim,'calc') || exist('psflag','var')
+            psflag = 1;
+            cfg_trial.trialdef.poststim = (ceil( (conf.file.tr*conf.file.nscan) + startTR) ) + 1;   % Defines the end of the trial relative to start of TC (which is defined by the marker - prestim). So you get nScans + 1 scan (bc we start one scan early for the NaN's) + 2 (little margin)
+        end
+        
+        StartTC    =   (startTR + cfg_trial.trialdef.prestim) / conf.file.timedat;  % Set the start of EMG time course (converted to datapoints (=0.1s) )
+        StopTC     =   StartTC + ((conf.file.nscan*conf.file.tr) / conf.file.timedat ); % Set the stop of EMG time course (converted to datapoints (=0.1s) )
+        
+        fprintf('%s\n',['-- The exact timecourse is ' num2str(conf.file.nscan*conf.file.tr/conf.file.timedat) ' datapoints (ms)'])
+        
+        StartTC    =   ceil(StartTC);                  % round up above
+        StopTC     =   ceil(StopTC);                   % round up above NB: because round error sometimes + 1
+
+        fprintf('%s\n',['-- The (rounded) time course will be ' num2str(StopTC - StartTC) ' datapoints (ms)'])
+        fprintf('%s\n',['-- This is ' num2str((StopTC - StartTC)/(conf.file.tr*10)) ' scans'])
+        
+        % -- FieldTrip Trial Definition -- %
+        
+        cfg_trial.datafile          =   CurDat;
+        cfg_trial.headerfile        =   CurHdr;
+        cfg_trial.trialdef.trgfile  =   CurMrk;
+        
+        cfg = ft_definetrial(cfg_trial);           % Trial definition, cfg.trl describes trial start, end and offset (in sample numbers)
+        
+        % --- FieldTrip Preprocessing --- %
+        
+        cfg.hpfilter      = cfg_preproc.hpfilter;  % highpass filter
+        cfg.hpfreq        = cfg_preproc.hpfreq;    % because of drop off effect in EMG signal
+        
+        data = ft_preprocessing(cfg);              % Preprocessing
+        
+        % --- FieldTrip Frequency Analysis --- %
+        
+        if strcmpi(cfg_freq.toi,'orig')
+            cfg_freq.toi  = data.time{1}:conf.file.timedat:data.time{1}(end);       % Window timing
+        end
+        
+        TFdata = ft_freqanalysis(cfg_freq,data); % Combining all calculations from time to frequency domain.
+        
+        % --- Calculate mean of power (=PowerSpectrum) --- %
+        
+        Mean_Pow = mean(TFdata.powspctrm(:,:,StartTC:StopTC),3); % calculate mean powerspectrum
+        
+        % === Plotting PowerSpectrum === %
+        
+        nChan   =   size(Mean_Pow,1);
+        col     =   hsv(nChan);
+        
+        figure;
+        for c = 1:nChan
+            h(c) = plot(TFdata.freq,Mean_Pow(c,:),'col',col(c,:));
+            hold on;
+        end
+        
+        legend(h,TFdata.label)
+        legend('boxoff')
+        title([CurSub '-' CurSess ' PowerSpectrum'],'Interpreter','none')
+        xlabel('Frequency (Hz)')
+        ylabel('Power')
+        
+        % --- Execute automatic Peakfinder --- %
+        
+        freqlim         = 8;            % search for maximum power below this limit
+        max_power       = nan(1,nChan);
+        max_element     = max_power;
+        max_freq        = max_power;
+        
+        for i = 1:nChan
+            max_power(i) = max(Mean_Pow(i,1:find(TFdata.freq==freqlim)));
+            max_element(i) = find(Mean_Pow(i,1:find(TFdata.freq==freqlim)) == max_power(i));
+            max_freq(i) = TFdata.freq(Mean_Pow(i,1:find(TFdata.freq==freqlim)) == max_power(i));
+            plot(max_freq(i),max_power(i),'--rs','LineWidth',2,'MarkerEdgeColor','k','MarkerFaceColor','g','MarkerSize',10);
+            text(max_freq(i),max_power(i), strcat('\leftarrow',num2str(max_freq(i)),' Hz'),'FontSize',12);
+        end
+        
+        max_channel = find(max_power==(max(max_power)));
+        
+        % --- Interactive peak selection --- %
+        
+        sprintf('Channel %s had the highest peak (below %s Hz.) at %s Hz. in %s',num2str(max_channel),...
+            num2str(freqlim),num2str(max_freq(max_channel)),CurSub);
+        x = input('\nPlease enter the peak frequency in Hz: ');
+        
+        max_element = find((round(TFdata.freq*100)/100) == x);
+        fprintf('The data contains the following channels\n')
+        for d = 1:nChan; fprintf('%s\n',[num2str(d) '. ' TFdata.label{d}]); end
+        max_channel = input('Please enter the desired channel: ');
+        
+        sprintf('You have chosen Channel %s with frequency %s Hz. in %s',num2str(max_channel),...
+            num2str(TFdata.freq(max_element)),CurSub);
+        
+        plot(TFdata.freq(max_element),Mean_Pow(max_channel,max_element),'--rs','LineWidth',2,'MarkerEdgeColor','r',...
+            'MarkerFaceColor','r','MarkerSize',10);
+        text(TFdata.freq(max_element),Mean_Pow(max_channel,max_element),strcat('\leftarrow',...
+            num2str(TFdata.freq(max_element)),' Hz'),'FontSize',12);
+        
+        % --- Save the EMG TimeCourse, max_element, max_channel --- %
+        
+        saveas(gcf,fullfile(conf.dir.save,[CurSub '-' CurSess '_pwrspctrm']),'jpg');
+        save(fullfile(conf.dir.save,[CurSub '-' CurSess '_freqAn.mat']),'TFdata','max_element','max_channel','StartTC','StopTC');
+        
+        clear TFdata max_element max_channel StartTC StopTC
+    end
+end
+
+%==========================================================================
+
+%% Junk
+
+% we start with scan 30, which is 1 scan too early because the scan time series
+% starts with scan 31. However, the first 10 x 0.1 seconds in the EMG
+% time series consists of NaN's (due to Hanning taper). Thus, we start
+% our EMG time series at datapoint 19 (= start of scan 1). NB: this
+% setting assumes that we use an ascending sequence and a slice time
+% correction where slice data are interpolated to the first slice!
+    

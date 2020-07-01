@@ -1,0 +1,255 @@
+function pf_pmg_batch_kelsey(conf,varargin)
+% pf_pmg_batch(conf,varargin) is a batch like function to process and
+% analyze PMG data, that is EMG + Accelerometer data. Specify any of the
+% following options (as varargin)
+%   - 'ftana'  : Perform frequency analysis using FieldTrip.
+%                Following options can be specified in conf.ft.meth:
+%                - 'freqana': frequency analyze a dataset using FieldTrip
+%                - 'plot': plot this freqana data in various ways and (if
+%                          specified) interactively select data. 
+
+% Michiel Dirkx, 2015
+% $ParkFunC, version 20150609
+% Made suitable for the reemergent project of Kelsey, 20180915
+
+%--------------------------------------------------------------------------
+
+%% Warming Up
+%--------------------------------------------------------------------------
+
+if nargin < 2
+  varargin{1} =   'ftana';       % FieldTrip frequency analysis 
+end
+    
+%--------------------------------------------------------------------------
+
+%% Configuration
+%--------------------------------------------------------------------------    
+
+if nargin < 1
+    
+tic; clc; close all;
+
+%==========================================================================    
+% --- Directories --- %
+%==========================================================================
+
+conf.dir.root     =   '/project/3011165.01/raw/sub-005/Brainvision/';                   % Root directory ('all')
+
+
+conf.dir.raw      =   fullfile(conf.dir.root,'raw');                    % Directory containing the RAW files ('all')
+conf.dir.prepraw  =   fullfile(conf.dir.root,'raw','prepraw');  % Directory where the files created with 'prepraw' will be stored ('prepraw')
+
+conf.dir.ftsource =   conf.dir.raw;                                 % Directory containing files used for the FieldTrip analyses ('ftana')
+conf.dir.figsave  =   fullfile(conf.dir.root,'raw','analysis','Figures','reem'); % Directory where the fieldtrip analyses figures will be stored ('ftana')
+conf.dir.datsave  =   fullfile(conf.dir.root,'raw','analysis','Data','reem');                         % Directory where the fieldtrip analyses will be stored ('ftana')
+
+%==========================================================================    
+% --- Subjects --- %
+%==========================================================================
+
+conf.sub.name    =   {'005';};
+conf.sub.sess	 =   {'day1';'day2'};
+
+sel              =    1;
+
+conf.sub.name = conf.sub.name(sel);
+
+%==========================================================================    
+% --- FieldTrip Analyses ('ftana') --- %
+%==========================================================================
+
+% --- General --- %
+
+conf.ft.meth    =   {
+%                      'freqana';     % Frequency analysis using FieldTrip
+%                      'fragmentana'; % Function to analyze seperate fragments of conditions analyzed with 'freqana'. Useful for the POSTPD FigureClassification purpose.
+%                      'timetopeak';  % Function to calculate when meanTFR[after posturing)>=meanTFR[-1 -3]
+                     'plot';      % Plot frequency analysed data (including fragmentana).
+                    };
+
+conf.ft.chans   =   {
+                    'ECR_ma'    'ECR_ma';    % 1      % Channel name (as labeled by the headbox) followed by your own name. Use a new row for every new channel, and a new column for your own name. Leave blanc ('') if original channel names used.
+                    'FCR_ma'    'FCR_ma';    % 2      
+                    'ECR_la'    'ECR_la';    % 3      
+                    'FCR_la'    'FCR_la';    % 4      
+                    'Acc_x'     'Acc_x';     % 5      
+                    'Acc_y'     'Acc_y';     % 6      
+                    'Acc_z'     'Acc_z';     % 7      
+                    };
+                
+conf.ft.file       =   '/CurSub/&/CurSess/&/tremor_registration/&/.eeg/';      % File names (uses pf_findfile located in conf.dir.ftsource)
+conf.ft.savefile   =   'freqana_allchan_5_day1day2_restposture_preproc1_mtmconvol_freq1_2018091501.mat'; % name of the frequency analysed file you want to save or load
+conf.ft.load       =   'yes';                                                    % If frequency analysis was already done and you just want to load conf.ft.savefile               
+          
+% --- Frequency Analysis --- %                
+
+conf.ft.save       =   'yes';                       % Save the frequency analyzed data
+conf.ft.fa.cond    =  {                             % Conditions you want to include
+                       'rest' 
+                       'posture' 
+                       };                              
+
+%Preproc% 
+conf.ft.fa.prepostwin  = [0 0]; % Pre and post window (in seconds) before and after the start/stop of your conditions                           
+
+conf.fa.chandef =   {
+                      1:4;
+                      1:4;
+                      5:7;
+                    };       % Define the different preprocessing for the channels here. For every row define the channel name and then the structure index defined in conf.fa.cfg.preproc{i}. The different processed channels will be appended later on.
+
+conf.ft.fa.cfg.preproc{1}               = [];           % For every set of channels (nRows in conf.fa.chandef) you must here define the preprocessing methods 
+conf.ft.fa.cfg.preproc{1}.continuous    = 'yes';
+conf.ft.fa.cfg.preproc{1}.demean        = 'yes';        
+conf.ft.fa.cfg.preproc{1}.detrend       = 'yes';
+conf.ft.fa.cfg.preproc{1}.bpfilter      = 'yes';
+conf.ft.fa.cfg.preproc{1}.bpfreq        = [20 250];
+conf.ft.fa.cfg.preproc{2}.continuous    = 'yes';
+conf.ft.fa.cfg.preproc{2}.rectify       = 'yes';
+
+conf.ft.fa.cfg.preproc{3}               = [];
+conf.ft.fa.cfg.preproc{3}.continuous    = 'yes';
+conf.ft.fa.cfg.preproc{3}.demean        = 'yes';        
+conf.ft.fa.cfg.preproc{3}.detrend       = 'yes';
+
+%FreqAna%
+conf.ft.fa.cfg.freq.method              = 'mtmconvol'; % Choose a method ('mtmfft' or 'mtmconvol')
+conf.ft.fa.cfg.freq.output              = 'pow';       % Output ('pow' is powerspectrum; 'fourier': bare frequency domain)
+conf.ft.fa.cfg.freq.foi                 = 1:0.5:16;
+conf.ft.fa.cfg.freq.taper               = 'hanning';   % Taper ('dpss': multitaper; 'Hanning': single taper
+nFoi                                    = length(conf.ft.fa.cfg.freq.foi); 
+conf.ft.fa.cfg.freq.toi                 = 'all';       % times on which the analysis window should be centered (in seconds). Define 'orig' to use the original timepoints (every sample).
+conf.ft.fa.cfg.freq.t_ftimwin           = repmat(2,1,nFoi);     % vector 1 x nFoi, length of time window (in seconds)
+conf.ft.fa.avgfreq                      = 'no';        % If you specify this as yes, it will only save the average time spectrum and not the whole TFR (only applies for 'mtmconvol')
+
+%Optional1:redefinetrial%
+conf.ft.fa.cfg.trialdef.on              = 'no';    % If you want to cut the data into nTrials you can specify this option as 'yes'. Below you can specify in which datasegments you want to cut them.
+conf.ft.fa.cfg.trialdef.trl             = 5;       % Specify here the length of the new datasegments (i.e. if you specify 10 then the data will be cut in segments of 10s)
+
+% --- Fragmentana --- %
+
+conf.ft.fragana.cond                    = {'POSH'};   % Choose the conditions in freqana that you want to perform fragementana on
+conf.ft.fragana.avgcond.on              = 'yes';      % If you specified an average condition, indicate here yes.
+conf.ft.fragana.avgcond.which           = {
+                                            'POSH' {'POSH1' 'POSH2'};
+%                                             'Rest' {'Rest1' 'Rest2' 'Rest3'};
+                                          };          % Then if you have specified an average condition in conf.ft.freqana.cond, specify which conditions in freqana should be averaged for this new condition (so {POSH {POSH1 POSH2};} means you have a new condition POSH, which is the average of POSH1 and POSH2
+
+conf.ft.freqana.freqs.meth              = 'peaksel';  % Choose which frequencies of the TFR you want to use this for ('peaksel': means it will load the peaksel file in conf.ft.freqana.freqs.peakselfile to use selected peaks there)
+conf.ft.freqana.freqs.peakselfile       = 'peaksel_neurologyrevision_OFFON_restVSposh_all_peakfinder2SD_mancheck_redone.mat';  % Peaksel file. Make sure you have one selected peak per specified condition. 
+conf.ft.fragana.fragments               = {
+                                            [-3 -1];
+                                            [ 1  3];
+                                           };          % The fragments of the conditions you want to analyze (in seconds). 
+conf.ft.fragana.startcond               = 10;          % If during freqana you defined conf.ft.fa.prepostwin other than [0 0], you can define the relative timepoint with respect to conf.ft.fragana.fragments here.                                       
+conf.ft.fragana.savefile                = 'fragmentana.mat'; % name of the savefile
+
+% --- TimeToPeak --- %
+
+conf.ft.ttp.cond                    = {'posture'};   % Choose the conditions in freqana that you want to perform fragementana on
+conf.ft.ttp.avgcond.on              = 'yes';      % If you specified an average condition, indicate here yes.
+conf.ft.ttp.avgcond.which           = {
+                                            'posture' {'posture1' 'posture2' 'posture3'};
+                                       };          % Then if you have specified an average condition in conf.ft.freqana.cond, specify which conditions in freqana should be averaged for this new condition (so {POSH {POSH1 POSH2};} means you have a new condition POSH, which is the average of POSH1 and POSH2
+
+conf.ft.ttp.freqs.meth              = 'peaksel';  % Choose which frequencies of the TFR you want to use this for ('peaksel': means it will load the peaksel file in conf.ft.freqana.freqs.peakselfile to use selected peaks there)
+conf.ft.ttp.freqs.peakselfile       = 'peaksel_OFF_restVSposhVSpostVSweight_merged.mat';
+conf.ft.ttp.startcond               = 10;
+conf.ft.ttp.savefile                = 'timetopeak_neurologycomment_reem_-3--1_singleval.mat'; % name of the savefile
+
+%==========================%
+% --------- Plot --------- %
+%==========================%
+
+% --- General --- %
+
+conf.fa.fig.meth            = {'powspct';}; % Plots powerspectrum Choose what to display of the frequency analysis performed ('subpowspect': plot the power spectra of individual subjects (see pf_pmg_plot_powspct); 'avgpowspct': plot powerspectrum averaged over subjects; )
+conf.fa.fig.chan            = {
+                                 conf.ft.chans(1:7); % Enter the channel names you want to plot (you can use conf.ft.chans for this), if you specified a coherence analysis it will look for the channels in the left column. 
+                              };   
+                          
+% Then here specify the layout of your figure. Use one cell per figure.
+% Then organise the subplots by specify nCells for nSubplots, with
+% the index of each cell corresponding to the index of each subplot. Within
+% each cell (i.e. suplot), describe what you want to plot like this, R1:
+% session, R2: condition, R3: index of channels described in
+% conf.fa.fig.chan. If you average a condition, give it your own name here
+% which corresponds with the first column of conf.fa.fig.avgcond.which. If
+% you want multiple condition in one subplot then use R4,R5,R6 in the same
+% way you used R1,R2,R3 for your other condition. Make sure that for every
+% new condition you specify 3 extra columns (session,condition,channel). 
+% If you want to average several channels in one subplot, use 999 as the 
+% first channel index followed by the channels that need to be averaged.                           
+                          
+conf.fa.fig.plot{1}         = {
+                                {'day1','rest',1:2,'day1','posture',1:2} {'day1','rest',5:7,'day1','posture',5:7};
+                               }; 
+conf.fa.fig.plot{2}         = {
+                                {'day2','rest',1:2,'day2','posture',1:2} {'day2','rest',5:7,'day2','posture',5:7};
+                               }; 
+
+
+conf.fa.fig.avg.on            = 'no';       % Choose yes if you want a figure which is averaged over all subjects ('no' or 'yes') (ONLY IMPLEMENTED FOR 'powspct')
+conf.fa.fig.avgcond.on        = 'yes';      % Choose yes if you want to average over CONDITIONS FOR EVERY SUBJECT (ONLY IMPLEMENTED FOR 'powspct')
+conf.fa.fig.avgcond.which     = {
+                                  'rest' {'rest1' 'rest2' 'rest3'};
+                                  'posture' {'posture1' 'posture2' 'posture3'};
+                                  
+                                 }; % Specify a new row for every average, specify in each column (variable length) which condition you want to combine. The first column should indicate your code, for instance if you had POSH1 and POSH2 then {'POSH' 'POSH1' 'POSH2'}
+conf.fa.fig.backcol           = [0.2 0.2 0.2];  % Set the background color of your figures (RGB, e.g. [1 1 1] is defualt white)
+conf.fa.fig.xlim              = [];       % caChoose your x-axis, leave empty for default
+conf.fa.fig.ylim              = [];       % Choose your y-axis, leave empty for default
+conf.fa.fig.ax				  = '';	      % Apply axes of subplots to the other subplots in the figure (see pf_adjustax). Leave '' for default.
+% conf.fa.fig.col               = 'hsv';    % Choose color spectrum (e.g. hot, hsv, prism etc.)
+conf.fa.fig.save              = 'yes';     % Choose if you want to save your figures
+conf.fa.fig.savename          = {
+                                   'day1';
+                                   'day2';
+                                 }; % For every plot (conf.fa.fig.plot), text will be placed after CurSub_CurHand (e.g. p01_R
+conf.fa.fig.saveext           = '-dtiff';       % Extension format of saved figure (e.g. '-dtiff'; see print)
+conf.fa.fig.saveres           = '-r800';        % Resolution of saved figure (e.g. '-r100'; see print)
+
+% --- PowSpct ('powspct') --- %
+
+conf.fa.fig.pow.graph             = 'plot';       % Choose method of displaing the powerspcetrum ('plot': simple 2D plot; 'contourf': contourf plot)
+
+conf.fa.fig.pow.peaksel.onoff     = 'on';         % Choose if you want to perform a peak selection ('on')
+conf.fa.fig.pow.peaksel.peakdef   = 'mansingle';  % Choose the peak definition ('mansingle': manual selection of one peak per channel; 'peakfinder': use peakfinder to automatically select peaks)
+conf.fa.fig.pow.peaksel.mancheck  =  'yes';        % If you chose conf.fa.fig.pow.peaksel.peakdef   = 'peakfinder', specify if you want to manually select the real ones after automatic peak detection ('yes')
+conf.fa.fig.peaksel.savefile      = 'peakselection'; % Filename of the file where data retrieved from peaksel will be saved to
+                            
+end
+
+%--------------------------------------------------------------------------
+
+%% Preparing RAW
+%--------------------------------------------------------------------------
+
+H = strfind(varargin,'prepraw');
+if ~isempty ([H{:}])
+     pf_pmg_prepraw(conf);
+end
+
+%--------------------------------------------------------------------------
+
+%% Frequency Analysis
+%--------------------------------------------------------------------------
+
+H = strfind(varargin,'ftana');
+if ~isempty ([H{:}])
+    pf_pmg_ft_kelsey(conf);
+end
+
+%--------------------------------------------------------------------------
+
+%% Cooling Down
+%--------------------------------------------------------------------------
+
+T   =   toc;
+fprintf('\n%s\n',['Mission accomplished after ' num2str(T/60) ' minutes!!'])
+
+%--------------------------------------------------------------------------
+
+
+
