@@ -1,0 +1,27 @@
+function age = pf_returnage(birthday)
+% pf_returnage(birthday) returns the age in years for the date specified in
+% birthday. Birthday may be cell.
+
+% Michiel Dirkx, 2015
+% %ParkFunC, version 20151221
+
+%% Calculate
+%--------------------------------------------------------------------------
+
+if ~iscell(birthday)
+    birthday = {birthday};
+end
+
+nDate   =   length(birthday);
+age     =   nan(nDate,1);
+today   =   now;
+
+for a = 1:nDate
+    
+   CurDay = datenum(birthday{a});  
+   CurAge = datevec(today-CurDay);
+   age(a) = CurAge(a);
+    
+end
+
+
