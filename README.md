@@ -3,5 +3,5 @@ Scripts used for analyzing physiological recordings of the Personalized Parkinso
 
 Dependencies: 
 1) EEGLab 14.0.0b - see: ftp://sccn.ucsd.edu/pub/daily/
-2) FARM           - see: https://github.com/benoitberanger/FARM
+2) FARM           - included
 3) ParkFunC_EMG   - included
