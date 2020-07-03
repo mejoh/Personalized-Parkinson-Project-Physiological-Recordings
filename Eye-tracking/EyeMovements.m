@@ -1,8 +1,8 @@
-addpath('/project/3024006.01/users/marjoh/scripts/interpol')
+addpath('/home/sysneu/marjoh/scripts/interpol')
 addpath('/home/common/matlab/spm12');
 
 Root='/project/3024006.01/users/marjoh/test/EyeTracking';
-cd(Root)
+%cd(Root)
 Sub='PIT1MR0069775';
 
 %% Extract onsets and durations to form trial-by-trial windows for the eye-tracking data
@@ -44,7 +44,11 @@ EyeTrackFile = fullfile(Root, [Sub '_task1 Samples.txt']);
 MatFile = spm_file(EyeTrackFile, 'path', Root, 'ext', '.mat');
 trialwindow = [0,2];           % Trial windows are not used, set to max RT
 trialcoderange = 1:200;        % Codes are the same as Presentation
-%pupdat = interpol_convert_IDF_TXT(EyeTrackFile,trialwindow,trialcoderange);         % TO DO: Use interpolated rather than raw data.
+pupdat = interpol_convert_IDF_TXT(EyeTrackFile,trialwindow,trialcoderange);         % TO DO: Use interpolated rather than raw data.
+interpol_defaults;
+
+% INTERPOLATION DONE WITH COMMAND BELOW!
+[interpoldat, errorvec] = interpol_interpolate(pupdat.rawdat{1}, defaults.preblinkdiscard, defaults.postblinkdiscard, defaults.mincontiggood, defaults.meanwindow,pupdat.samplerate);
 
 % Open .mat file in gui and save
 % Load interpolated data
