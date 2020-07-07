@@ -1,3 +1,7 @@
+function ChangeMarkersAllSubs(Task, ProjectNr)
+% Which task would you like to process? (motor / reward / rest)
+% Which project would you like to process? (3022026.01 / 3024006.01)
+
 %% ToDo
 %Improve descriptions
 %Improve error handling
@@ -15,11 +19,9 @@ end
 
 %% USER SETTINGS
 %Options: 
-Task = "reward";                    % Which task would you like to process? (motor / reward / rest)
-ProjectNr = "3024006.01";           % Which project would you like to process? (3022026.01 / 3024006.01)
 
 %Standard settings: 
-settings.RawFolder  = fullfile(pDir, 'raw');   %We count the number of images in the raw folder
+settings.RawFolder  = fullfile(pfProject, ProjectNr, 'raw');   %We count the number of images in the raw folder
 
 %Settings specific to task
 if strcmp(Task, "motor")
@@ -271,5 +273,6 @@ elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
     end
 else
     fprintf("Project number not recognized as either PIT or POM, aborting...\n")
+end
 end
 end
