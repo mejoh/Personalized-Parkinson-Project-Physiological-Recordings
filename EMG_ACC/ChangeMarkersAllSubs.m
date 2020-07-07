@@ -264,7 +264,7 @@ if strcmp(ProjectNr, "3022026.01")  % ParkinsonOpMaat
         cFile = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
     end
 elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
-    vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' char(cSub)], 'ses-mri01', ['*' char(Task) '_physio'], ['*', cTask, '*.vmrk']));
+    vmrkPath = dir(fullfile(pDir, 'bids', ['sub-' char(cSub)], 'emg', ['*', cTask, '*.vmrk']));
     if isempty(vmrkPath)            % Check for subjects with missing vmrk file
         fprintf("Skipping sub-%s with no vmrk file\n", cSub)
         cFile = missing;
