@@ -49,6 +49,14 @@ addpath('/home/common/matlab/spm12')
 pDir = fullfile(pfProject, ProjectNr);
 pBIDSDir = char(fullfile(pDir, "bids"));
 Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)'; %Get list of subject who have done the chosen task. This will take a while (we're talking several minutes)...
+% Sel = true(numel(Sub),1);
+% for n = 1:numel(Sub)
+%     if ~spm_select('List', fullfile(conf.dir.root), '^sub.*\.vmrk$')
+%         Sel(n) = false;
+%         fprintf('Skipping sub-%s with insufficient markers in .vmrk file', Sub{n})
+%     end
+% end
+% Sub = Sub(Sel);
 
 %Check whether a .vmrk is present and select the last run
 inputTable = rowfun(@(cSub) getFiles(pDir, Task, ProjectNr, cSub), cell2table(Sub), 'NumOutputs', 2, 'OutputVariableNames', {'Subject', 'oldFile'});
@@ -117,21 +125,6 @@ else
     cData = cData(ismember(string(cData.Description), "R  1"), :);
 end
 
-%Check 2) acceptable timings, will also show additional pulses
-acceptableTimings=[settings.TR*5000, (settings.TR*5000)-1, (settings.TR*5000)+1];
-if ~all(ismember(diff(cData.PositionInDatapoints), round(acceptableTimings)))
-    warning(strcat("Not all R1 scans have the same interval for: ", oldFile, "trying to fix..."))
-    cError = strcat(cError, " & Not all R1 pulses have the same interval FIXED!!!!!");
-    cData = fixTimings(cData, acceptableTimings);
-    
-    %Check if fixed
-    if ~all(ismember(diff(cData.PositionInDatapoints), round(acceptableTimings)))
-        warning(strcat("Not all R1 scans have the same interval for: ", oldFile))
-        cError = strcat(cError, " & Not all R1 pulses have the same interval");
-        return
-    end
-end
-
 %Check 3) Check if there are sufficient pulses
 %Find number of pulses
 cImaFiles = size(dir(strcat(settings.RawFolder, filesep, "sub-", cSub, filesep, settings.ScanFolder)),1);
@@ -148,6 +141,21 @@ elseif (size(cData, 1) < cImaFiles)
     warning(strcat("Not enough pulses for: ", oldFile));
     cError = strcat(cError, " & Not enough pulses");
     return
+end
+
+%Check 2) acceptable timings, will also show additional pulses
+acceptableTimings=[settings.TR*5000, (settings.TR*5000)-1, (settings.TR*5000)+1];
+if ~all(ismember(diff(cData.PositionInDatapoints), round(acceptableTimings)))
+    warning(strcat("Not all R1 scans have the same interval for: ", oldFile, "trying to fix..."))
+    cError = strcat(cError, " & Not all R1 pulses have the same interval FIXED!!!!!");
+    cData = fixTimings(cData, acceptableTimings);
+    
+    %Check if fixed
+    if ~all(ismember(diff(cData.PositionInDatapoints), round(acceptableTimings)))
+        warning(strcat("Not all R1 scans have the same interval for: ", oldFile))
+        cError = strcat(cError, " & Not all R1 pulses have the same interval");
+        return
+    end
 end
 
 %Check 4) acceptable header name
