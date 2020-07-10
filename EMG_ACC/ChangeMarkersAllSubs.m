@@ -27,17 +27,17 @@ settings.RawFolder  = fullfile(pfProject, ProjectNr, 'raw');   %We count the num
 if strcmp(Task, "motor")
     settings.TR         = 1;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "corrected", "motor");                 %Output folder for the new files
     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "reward")
     settings.TR         = 2.24;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*cmrr_3.5iso_me5_TR2240", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "reward", "emg_acc", "test");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "corrected", "reward");                 %Output folder for the new files
     settings.NumberOfEchos = 5;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "rest")
     settings.TR         = 0.735;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*MB8_fMRI_fov210_2.4mm_ukbiobank", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "rest", "emg", "corrected");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "corrected", "rest");                 %Output folder for the new files
     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 end
 
