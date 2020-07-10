@@ -12,15 +12,15 @@ conf.sub.name   = conf.sub.name(sel); %COPIED FROM SETTINGS, NOT SURE WHY IT IS 
 %% ------------------------------------------------------------------------
 % Add packages
 %--------------------------------------------------------------------------
-if isempty(which('ft_defaults')) %check if fieldtrip is installed
-    addpath(path.Fieldtrip); %Add fieldtrip
-    ft_defaults
-end
-addpath(path.SPM); %Add SPM12
-addpath(fullfile(path.Fieldtrip, 'qsub'));
-addpath(genpath(path.ParkFunc));  %Add ParkFunc
-addpath(conf.dir.eeglab); eeglab; %Add eeglab
-addpath(genpath(conf.dir.Farm)); %Add FARM
+% if isempty(which('ft_defaults')) %check if fieldtrip is installed
+%     addpath(path.Fieldtrip); %Add fieldtrip
+%     ft_defaults
+% end
+% addpath(path.SPM); %Add SPM12
+% addpath(fullfile(path.Fieldtrip, 'qsub'));
+% addpath(genpath(path.ParkFunc));  %Add ParkFunc
+% addpath(conf.dir.eeglab); eeglab; %Add eeglab
+% addpath(genpath(conf.dir.Farm)); %Add FARM
 
 %% ------------------------------------------------------------------------
 % Initialize
@@ -360,7 +360,8 @@ for a = 1:nFiles
         trs    = latenc(2:end)-latenc(1:end-1);
         uTr    = unique(trs);
         incTr  = uTr<(5000*Tr) | uTr>(5000*Tr);
-        iIncor = find(trs==uTr(incTr));
+%         iIncor = find(trs==uTr(incTr));
+        iIncor = find(ismember(trs,uTr(incTr)));
         disp(['Unique TRs: ' num2str(uTr)])
         warning(['(Some of the) scanmarkers do not match your specified TR (probably scan number: '  num2str(iIncor+2) '-' num2str(iIncor+1) ' )']);
         
