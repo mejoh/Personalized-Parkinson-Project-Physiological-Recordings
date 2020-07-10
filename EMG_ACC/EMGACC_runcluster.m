@@ -59,8 +59,8 @@ end
 %REGR
 conf.dir.root      =   '/project/3022026.01/analyses/motor/emg/corrected';
 % conf.dir.root      =   fullfile('M:', 'Scripts', 'Packages', 'EMG_ACC', 'EMG_ACC');  % Root directory containing EMG files
-conf.dir.ParkFunc  =   fullfile(conf.dir.root, 'Helpers', 'Park_Func');     % Directory containing Park_Func
-conf.dir.Farm      =   '/project/3022026.01/analyses/tessa/Scripts/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
+conf.dir.ParkFunc  =   '/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
+conf.dir.Farm      =   '/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
 conf.dir.eeglab    =   '/home/sysneu/marjoh/scripts/eeglab14_0_0b'; % Directory containing EEGLAB
 conf.dir.SPM       =   fullfile('home', 'common', 'matlab', 'spm12');       % Directory containing SPM
 conf.dir.Fieldtrip =   fullfile('home', 'common', 'matlab', 'fieldtrip');   % Directory containing Fieldtrip
