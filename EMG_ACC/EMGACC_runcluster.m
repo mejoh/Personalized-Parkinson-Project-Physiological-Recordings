@@ -2,6 +2,21 @@ function EMGACC_runcluster(Task, ProjectNr)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
 % ProjectNr = '3024006.01' / '3022026.01';       % From which subjects do you want to process subjects
 
+% Dependencies
+% Settings
+% SETTINGS pf_emg_raw2regr.m & pf_emg_farm.m
+% Directories
+% Subjects
+% Frequency Analysis ('prepemg')
+% Frequency Analysis OPTIONAL
+% Make Regressor ('mkregressor')
+% FieldTrip Configuration
+% File info 
+% Preprocessing and slice triggers
+% Additional methods
+% Call functions
+% Final step: select peak frequency and channel, create regressor
+
 %% Exampleruncluster
 % Run FARM and Frequency analysis on cluster, after those peak frequency
 % and channel selection should be done. See end of this script.
@@ -171,7 +186,7 @@ conf.mkregr.reanalyzemeth = {  'regressor';
     }; % Method for re-analyzing the data ('regressor': create regressors; 'ps_save': only save average power spectrum)
 conf.mkregr.automatic = 'yes';
 conf.mkregr.automaticfreqwin = [2.99,8.1];
-conf.mkregr.automaticdir = '/project/3022026.01/analyses/motor/emg/automaticdir';
+conf.mkregr.automaticdir = fullfile('/project/3022026.01/analyses/EMG', Task, 'automaticdir');
 conf.mkregr.file      = '/CurSub/&/CurSess/&/freqana/'; % Name of prepemg data (uses pf_findfile)
 conf.mkregr.scanname  = '|w*';                          % search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile)
 conf.mkregr.sample    = 1;                              % Samplenr of every scan which will be used to represent the tremor during scan (if you used slice time correction, use the reference slice timing here)
