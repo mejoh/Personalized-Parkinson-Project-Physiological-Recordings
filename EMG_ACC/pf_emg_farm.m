@@ -1,72 +1,29 @@
-function pf_emg_farm_Task(subjects)
-%
+function pf_emg_farm(subjects, conf)
 % Function written by van der Meer for MR-correction of EMG signals.
 % See also van der Meer et al, 2010, clin. neurophyisology.
 
 % Made suitable for ParkFunC toolbox by Michiel Dirkx, 2014
 % Configured by Jitse Amelink for Personalized Parkinson Project, fall 2019
 % $ParkFunC
-
-%--------------------------------------------------------------------------
-
-%% Configuration
-%--------------------------------------------------------------------------
 tic;
+sel   = 1; %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
+conf.sub.name   = conf.sub.name(sel); %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
 
-% --- Directories --- %
-
-conf.dir.root    = '/project/3022026.01/analyses/tessa/Test/correction_markerfiles' %for PD_on
-%conf.dir.root    =   strcat('/project/3024006.01/raw/', 'sub-', subjects, '/ses-mri01/011-reward_physio'); %for PD_off
-conf.dir.save    =   '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/FARM';
-conf.dir.work    =   '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/FARM/work';
-
-conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if present)
-conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
-
-% --- Subjects --- %
-conf.sub.name   = {subjects};
-conf.sub.sess   = {'_'};
-conf.sub.run    = {'task2'};
-
-sel   = 1;
-conf.sub.name   = conf.sub.name(sel);
-
-% --- Add helper paths --- %
-rmpath ('/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Rest')
-scriptdir = '/project/3022026.01/analyses/tessa/Scripts/EMG_ACC/Helpers';
-if isempty(which('eeglab'))
-    addpath(fullfile(scriptdir,'eeglab14_0_0b'));
-    eeglab
-    addpath('/home/common/matlab/fieldtrip');
-    ft_defaults
-    addpath(genpath(fullfile(scriptdir,'FARM_toolbox')));
-    addpath(fullfile(scriptdir,'ParkFunC_EMG','EMG'));
-    addpath(fullfile(scriptdir,'ParkFunC_EMG','Helpers'));
-end
-
-% --- File info --- %
-
-conf.file.name          =   '/CurSub/&/CurSess/&/CurRun/&/.vhdr/';%%%%%%%%%%%%%%%%%%%%%%%%%%%% .vhdr file of the BVA EMG file(uses pf_findfile)
-conf.file.nchan         =   9;                                             % total amount of channels in original file
-conf.file.chan          =   1:4;                                           % Channels you want to analyze. EMG
-conf.file.scanpar       =   [2.24;32;nan];                                 % Scan parameters: TR / nSlices / nScans (enter nan for nScans if you want to automatically detect this)
-conf.file.etype         =   'R  1';                                        % Scan marker (EEG.event.type)
-
-% --- Preprocessing --- %
-conf.preproc.mkbipol    =   'no';       % If yes, then it will make bipolar out of monopolar channels
-% --- Slice Triggers --- %
-conf.slt.plot           =   'no';       % Plot the slicetrigger check (no for qsub)
-
-% --- Additional methods --- %
-conf.meth.volcor  =   'yes';   % volume correction
-conf.meth.cluster =   'yes';   % Cluster correction
-conf.meth.pca     =   'yes';   % do PCA
-conf.meth.lp      =   'yes';   % Do lowpass filtering
-conf.meth.hp      =   'yes';   % do highpass filtering
-conf.meth.anc     =   'yes';   % do ANC
+%% ------------------------------------------------------------------------
+% Add packages
 %--------------------------------------------------------------------------
+if isempty(which('ft_defaults')) %check if fieldtrip is installed
+    addpath(path.Fieldtrip); %Add fieldtrip
+    ft_defaults
+end
+addpath(path.SPM); %Add SPM12
+addpath(fullfile(path.Fieldtrip, 'qsub'));
+addpath(genpath(path.ParkFunc));  %Add ParkFunc
+addpath(conf.dir.eeglab); eeglab; %Add eeglab
+addpath(genpath(conf.dir.Farm)); %Add FARM
 
-%% Initialize
+%% ------------------------------------------------------------------------
+% Initialize
 %--------------------------------------------------------------------------
 fprintf('\n%s\n\n','% -------------- Initializing -------------- %')
 
@@ -81,8 +38,8 @@ workmain =   fullfile(conf.dir.work);
 if ~exist(workmain,'dir');      mkdir(workmain);      end
 if ~exist(conf.dir.save,'dir'); mkdir(conf.dir.save); end
 
-%--------------------------------------------------------------------------
-%% Retrieve all fullfiles, initializing workdir
+%% ------------------------------------------------------------------------
+% Retrieve all fullfiles, initializing workdir
 %--------------------------------------------------------------------------
 fprintf('\n%s\n\n','% -------------- Retrieving all fullfiles -------------- %')
 
@@ -129,8 +86,8 @@ for a = 1:nSub
     end
 end
 
-%--------------------------------------------------------------------------
-%%  FARM correction
+%% ------------------------------------------------------------------------
+%  FARM correction
 %--------------------------------------------------------------------------
 fprintf('\n%s\n','% -------------- Performing FARM correction -------------- %')
 homer    =   pwd;
