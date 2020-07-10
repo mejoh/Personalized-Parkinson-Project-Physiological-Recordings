@@ -194,8 +194,6 @@ else
 end
 
 %Check number of scans
-nScan = dir(fullfile("project","3022026.01","raw", strcat("sub-", cSub), "ses-mri01","*cmrr_3.5iso_me5_TR2240", "*.IMA"));
-conf.mkregr.nscan = (size(nScan,1)/numberofEchos) - conf.prepemg.dumscan;
 dScan = dir(fullfile(pDir,'raw', strcat('sub-', char(conf.sub.name)), 'ses-mri01', pScan));     % Directory containing raw .IMAs
 nScan = dir(fullfile(pDir,'raw', strcat('sub-', char(conf.sub.name)), 'ses-mri01', dScan.name, '*.IMA'));
 conf.mkregr.nscan = (size(nScan,1)/NEchoes) - conf.prepemg.dumscan;
