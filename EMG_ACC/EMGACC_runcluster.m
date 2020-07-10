@@ -2,9 +2,7 @@
 % Run FARM and Frequnecy analysis on cluster, after those peak frequency
 % and channel selection should be done. See end of this script.
 
-%% TO DO
-%Add dependencies: fieldtrip and spm
-%addpath(eeglab)
+%% Dependencies
 
 %% Settings
 cluster_outputdir = '/project/3022026.01/analyses/motor/emg/clusteroutput';
