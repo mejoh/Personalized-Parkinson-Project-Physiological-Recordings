@@ -1,3 +1,7 @@
+function EMGACC_runcluster(Task, ProjectNr)
+% Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
+% ProjectNr = '3024006.01' / '3022026.01';       % From which subjects do you want to process subjects
+
 %% Exampleruncluster
 % Run FARM and Frequency analysis on cluster, after those peak frequency
 % and channel selection should be done. See end of this script.
@@ -5,8 +9,6 @@
 %% Dependencies
 
 %% Settings
-cluster_outputdir = '/project/3022026.01/analyses/motor/emg/clusteroutput';
-processing_dir = '/project/3022026.01/analyses/motor/emg/processing';
 
 %Select what to do
 conf.todo.Farm               = true; %Do you want to run Farm
@@ -16,8 +18,8 @@ conf.todo.mkregressor        = true; %When doing frequency analysis, do you want
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
 
 %Task Settings:
-Task = 'motor';
-ProjectNr = '3024006.01';
+cluster_outputdir = fullfile('/project/3022026.01/analyses/EMG/', Task, '/clusteroutput');
+processing_dir = fullfile('/project/3022026.01/analyses/EMG/', Task, '/processing');
 pDir = fullfile('/project', ProjectNr);
 if strcmp(Task,'reward')   
     NEchoes     = 5;        % Number of echoes
@@ -35,7 +37,6 @@ elseif strcmp(Task,'rest')
     NSlices     = 64;     
     pScan = '0*MB8_fMRI_fov210_2.4mm_ukbiobank';
 end
-
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SETTINGS pf_emg_raw2regr.m & pf_emg_farm.m
@@ -57,11 +58,10 @@ end
 %% Directories
 %--------------------------------------------------------------------------
 %REGR
-conf.dir.root      =   '/project/3022026.01/analyses/motor/emg/corrected';
-% conf.dir.root      =   fullfile('M:', 'Scripts', 'Packages', 'EMG_ACC', 'EMG_ACC');  % Root directory containing EMG files
-conf.dir.ParkFunc  =   '/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
-conf.dir.Farm      =   '/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
-conf.dir.eeglab    =   '/home/sysneu/marjoh/scripts/eeglab14_0_0b'; % Directory containing EEGLAB
+conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG/', Task, 'corrected');
+conf.dir.ParkFunc  =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
+conf.dir.Farm      =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
+conf.dir.eeglab    =   '/project/3022026.01/scripts/Physio/eeglab14_0_0b'; % Directory containing EEGLAB
 conf.dir.SPM       =   fullfile('home', 'common', 'matlab', 'spm12');       % Directory containing SPM
 conf.dir.Fieldtrip =   fullfile('home', 'common', 'matlab', 'fieldtrip');   % Directory containing Fieldtrip
 conf.dir.preproc   =   fullfile(conf.dir.root, 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
@@ -334,3 +334,4 @@ cd(startdir)
 % addpath('/home/common/matlab/spm12');
 % spm fmri
 
+end
