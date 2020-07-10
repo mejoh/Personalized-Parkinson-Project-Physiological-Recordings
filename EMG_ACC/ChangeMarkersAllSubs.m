@@ -1,3 +1,7 @@
+function ChangeMarkersAllSubs(Task, ProjectNr)
+% Which task would you like to process? (motor / reward / rest)
+% Which project would you like to process? (3022026.01 / 3024006.01)
+
 %% ToDo
 %Improve descriptions
 %Improve error handling
@@ -15,11 +19,9 @@ end
 
 %% USER SETTINGS
 %Options: 
-Task = "reward";                    % Which task would you like to process? (motor / reward / rest)
-ProjectNr = "3024006.01";           % Which project would you like to process? (3022026.01 / 3024006.01)
 
 %Standard settings: 
-settings.RawFolder  = fullfile(pDir, 'raw');   %We count the number of images in the raw folder
+settings.RawFolder  = fullfile(pfProject, ProjectNr, 'raw');   %We count the number of images in the raw folder
 
 %Settings specific to task
 if strcmp(Task, "motor")
@@ -262,7 +264,7 @@ if strcmp(ProjectNr, "3022026.01")  % ParkinsonOpMaat
         cFile = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
     end
 elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
-    vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' char(cSub)], 'ses-mri01', ['*' char(Task) '_physio'], ['*', cTask, '*.vmrk']));
+    vmrkPath = dir(fullfile(pDir, 'bids', ['sub-' char(cSub)], 'emg', ['*', cTask, '*.vmrk']));
     if isempty(vmrkPath)            % Check for subjects with missing vmrk file
         fprintf("Skipping sub-%s with no vmrk file\n", cSub)
         cFile = missing;
@@ -271,5 +273,6 @@ elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
     end
 else
     fprintf("Project number not recognized as either PIT or POM, aborting...\n")
+end
 end
 end
