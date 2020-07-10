@@ -249,9 +249,9 @@ switch Task
     case "rest"
         cTask = 'rest';
     case "reward" 
-        cTask = 'task';
+        cTask = 'reward';
     case "motor" 
-        cTask = 'task';
+        cTask = 'motor';
 end
 
 %Check original file is present
