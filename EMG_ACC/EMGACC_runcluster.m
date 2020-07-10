@@ -7,16 +7,12 @@
 %addpath(eeglab)
 
 %% Settings
-cluster_outputdir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/Clusteroutput'; %directory where job info and output is stored
-processing_dir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task';
-
-subTable = getSubjects('PD_on_study');
-subjects = cellstr(subTable.SubjectNumber);
-%subject = subjects {1}
+cluster_outputdir = '/project/3022026.01/analyses/motor/emg/clusteroutput';
+processing_dir = '/project/3022026.01/analyses/motor/emg/processing';
 
 %Select what to do
-conf.todo.Farm               = false;%Do you want to run Farm
-conf.todo.Frequency_analysis = true; %Do you want to run frequency analysis
+conf.todo.Farm               = true; %Do you want to run Farm
+conf.todo.Frequency_analysis = false; %Do you want to run frequency analysis
 conf.todo.prepemg            = true; %When doing frequency analysis, do you want to prepair emg using: pf_emg_raw2regr_prepemg
 conf.todo.mkregressor        = true; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
@@ -45,10 +41,11 @@ numberofEchos     = 5;         % Number of echo's of the sequence (use 1 if ther
 % Directories
 %--------------------------------------------------------------------------
 %REGR
-conf.dir.root      =   fullfile('M:', 'Scripts', 'Packages', 'EMG_ACC', 'EMG_ACC');  % Root directory containing EMG files
+conf.dir.root      =   '/project/3022026.01/analyses/motor/emg/corrected';
+% conf.dir.root      =   fullfile('M:', 'Scripts', 'Packages', 'EMG_ACC', 'EMG_ACC');  % Root directory containing EMG files
 conf.dir.ParkFunc  =   fullfile(conf.dir.root, 'Helpers', 'Park_Func');     % Directory containing Park_Func
-conf.dir.Farm      =   fullfile(conf.dir.root, 'Helpers', 'Farm');          % Directory containing Farm
-conf.dir.eeglab    =   fullfile(conf.dir.root, 'Helpers', 'eeglab14_0_0b'); % Directory containing EEGLAB
+conf.dir.Farm      =   '/project/3022026.01/analyses/tessa/Scripts/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
+conf.dir.eeglab    =   '/home/sysneu/marjoh/scripts/eeglab14_0_0b'; % Directory containing EEGLAB
 conf.dir.SPM       =   fullfile('home', 'common', 'matlab', 'spm12');       % Directory containing SPM
 conf.dir.Fieldtrip =   fullfile('home', 'common', 'matlab', 'fieldtrip');   % Directory containing Fieldtrip
 conf.dir.preproc   =   fullfile(conf.dir.root, 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
@@ -62,8 +59,10 @@ conf.dir.reanalyze.orig =  fullfile(conf.dir.regr,'ZSCORED'); % If in function "
 %conf.dir.fmri.preproc = {'CurSub' 'func' 'CurSess' 'CurRun' 'preproc' 'norm'};  % Directory appended to conf.dir.fmri.root containing the subject-specific fMRI scans. In this example, if the subject is p02, session is OFF and run is resting_state it will search the amount of scans in /home/action/micdir/data/DRDR_MRI/fMRI/p02/func/OFF/resting_state/preproc/norm and use this amount to match the EMG regressor datapoint
 
 %FARM
-conf.dir.save    =   fullfile('M:', 'Data', 'FARM');            % Directory for saving FARM output
-conf.dir.work    =   fullfile('M:', 'Data', 'FARM', 'work');    % Directory for temporary FARM files
+conf.dir.save    =   '/project/3022026.01/analyses/motor/emg/corrected/FARM';
+conf.dir.work    =   '/project/3022026.01/analyses/motor/emg/corrected/FARM/work';
+% conf.dir.save    =   fullfile('M:', 'Data', 'FARM');            % Directory for saving FARM output
+% conf.dir.work    =   fullfile('M:', 'Data', 'FARM', 'work');    % Directory for temporary FARM files
 conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if present)
 conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 
@@ -142,7 +141,7 @@ conf.mkregr.reanalyzemeth = {  'regressor';
     }; % Method for re-analyzing the data ('regressor': create regressors; 'ps_save': only save average power spectrum)
 conf.mkregr.automatic = 'yes';
 conf.mkregr.automaticfreqwin = [2.99,8.1];
-conf.mkregr.automaticdir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/prepemg/Regressors/Check_automaticselection';
+conf.mkregr.automaticdir = '/project/3022026.01/analyses/motor/emg/automaticdir';
 conf.mkregr.file      = '/CurSub/&/CurSess/&/freqana/'; % Name of prepemg data (uses pf_findfile)
 conf.mkregr.scanname  = '|w*';                          % search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile)
 conf.mkregr.sample    = 1;                              % Samplenr of every scan which will be used to represent the tremor during scan (if you used slice time correction, use the reference slice timing here)
@@ -267,17 +266,17 @@ conf.meth.anc     =   'yes';   % do ANC
 %% Call functions
 startdir = pwd;
 cd(cluster_outputdir)
-FARMjobs = {}; FREQjobs = {};
-
-for sb=1:length(subjects)
-    if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' subjects{sb} '/&/task1/'])) && todo.Farm
-        fprintf(['\n --- Submitting FARM-job for subject ' subjects{sb} ' ---\n']);
-        FARMjobs{sb} = qsubfeval('pf_emg_farm_Task',subjects{sb}, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
-    elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' subjects{sb} '/&/task1/'])) && todo.Frequency_analysis
-        fprintf(['\n --- Submitting frequency analysis-job for subject ' subjects{sb} ' ---\n']);
-        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr_Task',subjects{sb}, conf, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
+FARMjobs = cell(numel(conf.sub.name),1);
+FREQjobs = cell(numel(conf.sub.name),1);
+for sb=1:numel(conf.sub.name)
+    if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name{sb} '/&/task1/'])) && conf.todo.Farm
+        fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name{sb} ' ---\n']);
+        FARMjobs{sb} = qsubfeval('pf_emg_farm',conf.sub.name{sb}, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
+    elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name{sb} '/&/task1/'])) && conf.todo.Frequency_analysis
+        fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name{sb} ' ---\n']);
+        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr',conf.sub.name{sb}, conf, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
     else
-        fprintf(['\n --- FARM and frequency analysis already done for ' subjects{sb} ' or not selected as task ---\n']);
+        fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name{sb} ' or not selected as task ---\n']);
     end
 end
 
