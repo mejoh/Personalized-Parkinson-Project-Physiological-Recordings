@@ -90,10 +90,8 @@ conf.dir.reanalyze.orig =  fullfile(conf.dir.regr,'ZSCORED'); % If in function "
 %conf.dir.fmri.preproc = {'CurSub' 'func' 'CurSess' 'CurRun' 'preproc' 'norm'};  % Directory appended to conf.dir.fmri.root containing the subject-specific fMRI scans. In this example, if the subject is p02, session is OFF and run is resting_state it will search the amount of scans in /home/action/micdir/data/DRDR_MRI/fMRI/p02/func/OFF/resting_state/preproc/norm and use this amount to match the EMG regressor datapoint
 
 %FARM
-conf.dir.save    =   '/project/3022026.01/analyses/motor/emg/corrected/FARM';
-conf.dir.work    =   '/project/3022026.01/analyses/motor/emg/corrected/FARM/work';
-% conf.dir.save    =   fullfile('M:', 'Data', 'FARM');            % Directory for saving FARM output
-% conf.dir.work    =   fullfile('M:', 'Data', 'FARM', 'work');    % Directory for temporary FARM files
+conf.dir.save    =   fullfile('/project/3022026.01/analyses/EMG', Task, '/corrected/FARM');
+conf.dir.work    =   fullfile('/project/3022026.01/analyses/EMG', Task, '/corrected/FARM/work');
 conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if present)
 conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 
@@ -115,7 +113,7 @@ end
 %Exclude healthy controls from PIT (no emg)
 if strcmp(ProjectNr, '3024006.01')
   for n = 1:numel(Sub)
-    TaskJsonFile = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'beh'), strcat({'^sub.*'}, {Task}, {'.*_events\.json$'}));
+    TaskJsonFile = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'beh'),['^sub.*', 'motor', '.*_events\.json$']);
     Json = fileread(TaskJsonFile);
     DecodedJson = jsondecode(Json);
     if strcmp(DecodedJson.Group.Value, 'HC_PIT')
