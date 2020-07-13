@@ -5,6 +5,7 @@ function ChangeMarkersAllSubs(Task, ProjectNr)
 %% ToDo
 %Improve descriptions
 %Improve error handling
+%Task = rest errors after a few subjects
 
 %% OS CHECK
 if ispc
