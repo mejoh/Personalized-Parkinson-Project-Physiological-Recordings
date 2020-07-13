@@ -104,12 +104,34 @@ conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 pBIDSDir = char(fullfile(pDir, 'bids'));
 Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)'; %Get list of subject who have done the chosen task. This will take a while (we're talking several minutes)...
 
-%Exclude subjects                   <<<< TODO: Check a better file
+%Exclude subjects without vmrk file             <<< ToDo: Better check?
 Sel = true(numel(Sub),1);
 for n = 1:numel(Sub)
     if ~spm_select('List', fullfile(conf.dir.root), strcat({'^sub.*'}, {Task}, {'.*\.vmrk$'}))
         Sel(n) = false;
         fprintf('Skipping sub-%s with no .vmrk file', Sub{n})
+    end
+end
+%Exclude healthy controls from PIT (no emg)
+if strcmp(ProjectNr, '3024006.01')
+  for n = 1:numel(Sub)
+    TaskJsonFile = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'beh'), strcat({'^sub.*'}, {Task}, {'.*_events\.json$'}));
+    Json = fileread(TaskJsonFile);
+    DecodedJson = jsondecode(Json);
+    if strcmp(DecodedJson.Group.Value, 'HC_PIT')
+        Sel(n) = false;
+        fprintf('Skipping sub-%s, healthy control\n', Sub{n})
+    end
+  end
+end
+%TEMPORARY: Exclusion of participants with >9 channels
+for n = 1:numel(Sub)
+    Channels = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'emg'), ['^sub.*' Task '.*channels.tsv$']);
+    txtChannels = tdfread(Channels);
+    nChannels = length(txtChannels.name);
+    if nChannels > 9
+        Sel(n) = false;
+        fprintf('Skipping sub-%s with %i channels\n', Sub{n}, nChannels)
     end
 end
 Sub = Sub(Sel);
