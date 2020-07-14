@@ -44,12 +44,14 @@ if strcmp(Task,'reward')
 elseif strcmp(Task,'motor')
     NEchoes     = 1;
     TR          = 1;  
-    NSlices     = 72;   
+    MB          = 6;
+    NSlices     = 72 / MB;   
     pScan = '0*-MB6_fMRI_2.0iso_TR1000TE34';
 elseif strcmp(Task,'rest')
     NEchoes     = 1;
     TR          = 0.735;  
-    NSlices     = 64;     
+    MB          = 8;
+    NSlices     = 64 / MB;     
     pScan = '0*MB8_fMRI_fov210_2.4mm_ukbiobank';
 end
 
@@ -220,7 +222,7 @@ conf.mkregr.save      = 'yes';                          % Save regressors/figure
 if conf.todo.ACC
     conf.mkregr.automaticchans = 5:7;
 else
-    AffectedSide = Most_affected_hand(subject);
+    AffectedSide = Most_affected_hand(conf.sub.name);
     if strcmp(AffectedSide, 'Left')
         conf.mkregr.automaticchans = 3:4;
     elseif strcmp(AffectedSide,'Right')
@@ -340,7 +342,7 @@ for sb=1:numel(conf.sub.name)
         FARMjobs{sb} = qsubfeval('pf_emg_farm',conf.sub.name{sb}, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
     elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name{sb} '/&/task1/'])) && conf.todo.Frequency_analysis
         fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name{sb} ' ---\n']);
-        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr',conf.sub.name{sb}, conf, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
+        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr',conf.sub.name{sb}, conf, cfg, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
     else
         fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name{sb} ' or not selected as task ---\n']);
     end
