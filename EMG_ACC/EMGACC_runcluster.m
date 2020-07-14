@@ -141,11 +141,13 @@ for n = 1:numel(Sub)
     end
 end
 Sub = Sub(Sel);
-conf.sub.name   = Sub;
+NrToAnalyze     = 1;
+
+for n = 1:NrToAnalyze
+conf.sub.name   = Sub{n};
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
 conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
-NrToAnalyze     = 2;
-conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
+% conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
 
 %--------------------------------------------------------------------------
 %% Frequency Analysis ('prepemg')
@@ -342,16 +344,14 @@ startdir = pwd;
 cd(cluster_outputdir)
 FARMjobs = cell(numel(conf.sub.name),1);
 FREQjobs = cell(numel(conf.sub.name),1);
-for sb=1:numel(conf.sub.name)
-    if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name{sb} '/&/task1/'])) && conf.todo.Farm
-        fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name{sb} ' ---\n']);
-        FARMjobs{sb} = qsubfeval('pf_emg_farm',conf.sub.name{sb}, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
-    elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name{sb} '/&/task1/'])) && conf.todo.Frequency_analysis
-        fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name{sb} ' ---\n']);
-        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr',conf.sub.name{sb}, conf, cfg, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
-    else
-        fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name{sb} ' or not selected as task ---\n']);
-    end
+if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name '/&/task1/'])) && conf.todo.Farm
+    fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name ' ---\n']);
+    FARMjobs{sb} = qsubfeval('pf_emg_farm',conf.sub.name, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
+elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name '/&/task1/'])) && conf.todo.Frequency_analysis
+    fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name ' ---\n']);
+    FREQjobs{sb} = qsubfeval('pf_emg_raw2regr',conf.sub.name, conf, cfg, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
+else
+    fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name ' or not selected as task ---\n']);
 end
 
 jobs = [FARMjobs FREQjobs];
@@ -377,4 +377,5 @@ cd(startdir)
 % addpath('/home/common/matlab/spm12');
 % spm fmri
 
+end
 end
