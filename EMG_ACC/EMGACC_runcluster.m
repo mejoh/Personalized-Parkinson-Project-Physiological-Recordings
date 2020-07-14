@@ -81,7 +81,7 @@ end
 %% Directories
 %--------------------------------------------------------------------------
 %REGR
-conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG/', Task, 'corrected');
+conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG/', Task);
 conf.dir.ParkFunc  =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
 conf.dir.Farm      =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
 conf.dir.eeglab    =   '/project/3022026.01/scripts/Physio/eeglab14_0_0b'; % Directory containing EEGLAB
@@ -345,10 +345,10 @@ startdir = pwd;
 cd(cluster_outputdir)
 if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Farm
     fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name ' ---\n']);
-    FARMjobs{n} = qsubfeval('pf_emg_farm', {conf.sub.name}, {conf},'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
+    FARMjobs{n} = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
 elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Frequency_analysis
     fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name ' ---\n']);
-    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', {conf.sub.name}, {conf}, {cfg}, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
+    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
 else
     fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name ' or not selected as task ---\n']);
 end
