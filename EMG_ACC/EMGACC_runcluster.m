@@ -27,7 +27,7 @@ addpath('/home/common/matlab/fieldtrip')
 addpath('/home/common/matlab/fieldtrip/qsub')
 ft_defaults
 addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
-% addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
+addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
 
 %% Settings
 
