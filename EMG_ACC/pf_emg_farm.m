@@ -44,11 +44,11 @@ if ~exist(conf.dir.save,'dir'); mkdir(conf.dir.save); end
 fprintf('\n%s\n\n','% -------------- Retrieving all fullfiles -------------- %')
 
 for a = 1:nSub
-    CurSub  =   conf.sub.name{a};
+    CurSub  =   conf.sub.name;
     for b = 1:nSess
-        CurSess    =   conf.sub.sess{b};
+        CurSess    =   conf.sub.sess;
         for c = 1:nRun
-            CurRun     =   conf.sub.run{c};
+            CurRun     =   conf.sub.run;
             CurFile    =   pf_findfile(conf.dir.root,conf.file.name,'conf',conf,'CurSub',a,'CurSess',b,'CurRun',c);
             % Comment is changed because unable to run the pf_findfile function
             % with the task name, I could not identify why. Error in line 139
