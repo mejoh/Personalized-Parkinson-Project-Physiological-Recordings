@@ -142,7 +142,8 @@ for n = 1:numel(Sub)
 end
 Sub = Sub(Sel);
 NrToAnalyze     = 1;
-
+FARMjobs = cell(NrToAnalyze,1);
+FREQjobs = cell(NrToAnalyze,1);
 for n = 1:NrToAnalyze
 conf.sub.name   = Sub{n};
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
@@ -342,8 +343,6 @@ conf.meth.anc     =   'yes';   % do ANC
 %% Call functions
 startdir = pwd;
 cd(cluster_outputdir)
-FARMjobs = cell(numel(Sub),1);
-FREQjobs = cell(numel(Sub),1);
 if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Farm
     fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name ' ---\n']);
     FARMjobs{n} = qsubfeval('pf_emg_farm',conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
@@ -352,6 +351,7 @@ elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name
     FREQjobs{n} = qsubfeval('pf_emg_raw2regr',conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
 else
     fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name ' or not selected as task ---\n']);
+end
 end
 
 jobs = [FARMjobs FREQjobs];
@@ -377,5 +377,4 @@ cd(startdir)
 % addpath('/home/common/matlab/spm12');
 % spm fmri
 
-end
 end
