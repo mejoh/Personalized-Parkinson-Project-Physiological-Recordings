@@ -6,8 +6,6 @@ function pf_emg_farm(subjects, conf)
 % Configured by Jitse Amelink for Personalized Parkinson Project, fall 2019
 % $ParkFunC
 tic;
-sel   = 1; %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
-conf.sub.name   = conf.sub.name(sel); %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
 
 %% ------------------------------------------------------------------------
 % Add packages
