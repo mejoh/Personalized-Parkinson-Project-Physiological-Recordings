@@ -339,8 +339,8 @@ for a = 1:nFiles
         EEG.chanlocs = [EEG.chanlocs EEGalt.chanlocs];
         
         % --- Export --- %
-        fname   =   char(strcat(conf.dir.save, '/',subjects, '___task1_FARM'));
-        pop_writebva(EEG,fname);
+        fname = fullfile(conf.dir.save,[char(subjects) '_' char(conf.sub.sess) '_' char(conf.sub.run) '_FARM']);
+        pop_writebva(EEG,fname);    % <<< NOTE!!! pop_writebva will cut fname at . in ProjectNr, function needs to be altered
         fprintf('%s\n',['Saved to ' fname]);
         
         % --- delete workdir --- %
@@ -348,7 +348,7 @@ for a = 1:nFiles
         try
             cd(homer)
         catch
-            cd /home/control/tespee
+            cd ~
         end
         
         if strcmp(conf.dir.preworkdel,'yes')

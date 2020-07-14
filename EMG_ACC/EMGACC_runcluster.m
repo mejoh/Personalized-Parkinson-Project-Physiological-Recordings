@@ -17,11 +17,17 @@ function EMGACC_runcluster(Task, ProjectNr)
 % Call functions
 % Final step: select peak frequency and channel, create regressor
 
-%% Exampleruncluster
+%% EMGACC_runcluster
 % Run FARM and Frequency analysis on cluster, after those peak frequency
 % and channel selection should be done. See end of this script.
 
 %% Dependencies
+addpath('/home/common/matlab/spm12')
+addpath('/home/common/matlab/fieldtrip')
+addpath('/home/common/matlab/fieldtrip/qsub')
+ft_defaults
+addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
+addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
 
 %% Settings
 
@@ -138,7 +144,7 @@ Sub = Sub(Sel);
 conf.sub.name   = Sub;
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
 conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
-NrToAnalyze     = 1;
+NrToAnalyze     = 2;
 conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
 
 %--------------------------------------------------------------------------
