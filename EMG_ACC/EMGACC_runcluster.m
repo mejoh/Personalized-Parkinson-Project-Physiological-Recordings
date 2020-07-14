@@ -343,12 +343,12 @@ conf.meth.anc     =   'yes';   % do ANC
 %% Call functions
 startdir = pwd;
 cd(cluster_outputdir)
-if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Farm
-    fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name ' ---\n']);
-    FARMjobs{n} = qsubfeval('pf_emg_farm',conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
-elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Frequency_analysis
-    fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name ' ---\n']);
-    FREQjobs{n} = qsubfeval('pf_emg_raw2regr',conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
+if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' Sub{n} '/&/' Task '/'])) && conf.todo.Farm
+    fprintf(['\n --- Submitting FARM-job for subject ' Sub{n} ' ---\n']);
+    FARMjobs{n} = qsubfeval('pf_emg_farm',Sub{n}, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
+elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' Sub{n} '/&/' Task '/'])) && conf.todo.Frequency_analysis
+    fprintf(['\n --- Submitting frequency analysis-job for subject ' Sub{n} ' ---\n']);
+    FREQjobs{n} = qsubfeval('pf_emg_raw2regr',Sub{n}, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
 else
     fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name ' or not selected as task ---\n']);
 end
