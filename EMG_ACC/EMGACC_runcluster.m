@@ -145,10 +145,10 @@ NrToAnalyze     = 1;
 FARMjobs = cell(NrToAnalyze,1);
 FREQjobs = cell(NrToAnalyze,1);
 for n = 1:NrToAnalyze
-conf.sub.name   = Sub{n};
+conf.sub.name   = Sub;
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
 conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
-% conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
+conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
 
 %--------------------------------------------------------------------------
 %% Frequency Analysis ('prepemg')
