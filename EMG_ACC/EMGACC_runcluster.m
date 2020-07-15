@@ -39,8 +39,8 @@ conf.todo.mkregressor        = true; %When doing frequency analysis, do you want
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
 
 %Task Settings:
-cluster_outputdir = fullfile('/project/3022026.01/analyses/EMG/', Task, '/clusteroutput');
-processing_dir = fullfile('/project/3022026.01/analyses/EMG/', Task, '/processing');
+cluster_outputdir = fullfile('/project/3022026.01/analyses/EMG', Task, 'clusteroutput');
+processing_dir = fullfile('/project/3022026.01/analyses/EMG', Task, 'processing');
 pDir = fullfile('/project', ProjectNr);
 if strcmp(Task,'reward')   
     NEchoes     = 5;        % Number of echoes
@@ -81,7 +81,7 @@ end
 %% Directories
 %--------------------------------------------------------------------------
 %REGR
-conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG/', Task);
+conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG', Task);
 conf.dir.ParkFunc  =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
 conf.dir.Farm      =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
 conf.dir.eeglab    =   '/project/3022026.01/scripts/Physio/eeglab14_0_0b'; % Directory containing EEGLAB
@@ -98,8 +98,8 @@ conf.dir.reanalyze.orig =  fullfile(conf.dir.regr,'ZSCORED'); % If in function "
 %conf.dir.fmri.preproc = {'CurSub' 'func' 'CurSess' 'CurRun' 'preproc' 'norm'};  % Directory appended to conf.dir.fmri.root containing the subject-specific fMRI scans. In this example, if the subject is p02, session is OFF and run is resting_state it will search the amount of scans in /home/action/micdir/data/DRDR_MRI/fMRI/p02/func/OFF/resting_state/preproc/norm and use this amount to match the EMG regressor datapoint
 
 %FARM
-conf.dir.save    =   fullfile('/project/3022026.01/analyses/EMG', Task, '/processing/FARM');
-conf.dir.work    =   fullfile('/project/3022026.01/analyses/EMG', Task, '/processing/FARM/work');
+conf.dir.save    =   fullfile(conf.dir.root, 'processing', 'FARM');
+conf.dir.work    =   fullfile(conf.dir.root, 'processing', 'FARM', 'work');
 conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if present)
 conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 
@@ -141,14 +141,15 @@ for n = 1:numel(Sub)
     end
 end
 Sub = Sub(Sel);
-NrToAnalyze     = 1;
-FARMjobs = cell(NrToAnalyze,1);
-FREQjobs = cell(NrToAnalyze,1);
-% for n = 1:NrToAnalyze
-conf.sub.name   = Sub;
+NrToAnalyze     = 2;
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
 conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
-conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
+
+FARMjobs = cell(numel(Sub),1);
+FREQjobs = cell(numel(Sub),1);
+for n = 1:NrToAnalyze
+conf.sub.name   = {Sub{n}};
+% conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
 
 %--------------------------------------------------------------------------
 %% Frequency Analysis ('prepemg')
@@ -345,14 +346,14 @@ startdir = pwd;
 cd(cluster_outputdir)
 if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Farm
     fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name ' ---\n']);
-    FARMjobs = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
+    FARMjobs{n} = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
 elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name '/&/' Task '/'])) && conf.todo.Frequency_analysis
     fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name ' ---\n']);
-    FREQjobs = qsubfeval('pf_emg_raw2regr', conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
+    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
 else
     fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name ' or not selected as task ---\n']);
 end
-% end
+end
 
 jobs = [FARMjobs FREQjobs];
 
