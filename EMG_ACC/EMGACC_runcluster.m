@@ -22,12 +22,12 @@ function EMGACC_runcluster(Task, ProjectNr)
 % and channel selection should be done. See end of this script.
 
 %% Dependencies
-addpath('/home/common/matlab/spm12')
-addpath('/home/common/matlab/fieldtrip')
-addpath('/home/common/matlab/fieldtrip/qsub')
-ft_defaults
-addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
-addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
+% addpath('/home/common/matlab/spm12')
+% addpath('/home/common/matlab/fieldtrip')
+% addpath('/home/common/matlab/fieldtrip/qsub')
+% ft_defaults
+% addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
+% addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
 %% Settings
 
 %Select what to do
