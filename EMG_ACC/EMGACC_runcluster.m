@@ -103,7 +103,7 @@ conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if p
 conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 
 %--------------------------------------------------------------------------
-%% Subjects
+%% Subjects (Very specific to PIT and POM!)
 %--------------------------------------------------------------------------
 %Retrieve subjects
 pBIDSDir = char(fullfile(pDir, 'bids'));
