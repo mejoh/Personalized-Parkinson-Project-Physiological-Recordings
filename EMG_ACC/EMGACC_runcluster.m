@@ -28,12 +28,11 @@ addpath('/home/common/matlab/fieldtrip/qsub')
 ft_defaults
 addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
 addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
-
 %% Settings
 
 %Select what to do
-conf.todo.Farm               = true; %Do you want to run Farm
-conf.todo.Frequency_analysis = false; %Do you want to run frequency analysis
+conf.todo.Farm               = false; %Do you want to run Farm
+conf.todo.Frequency_analysis = true; %Do you want to run frequency analysis
 conf.todo.prepemg            = true; %When doing frequency analysis, do you want to prepair emg using: pf_emg_raw2regr_prepemg
 conf.todo.mkregressor        = true; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
@@ -87,8 +86,8 @@ conf.dir.Farm      =   '/project/3022026.01/scripts/Physio/Personalized-Parkinso
 conf.dir.eeglab    =   '/project/3022026.01/scripts/Physio/eeglab14_0_0b'; % Directory containing EEGLAB
 conf.dir.SPM       =   fullfile('home', 'common', 'matlab', 'spm12');       % Directory containing SPM
 conf.dir.Fieldtrip =   fullfile('home', 'common', 'matlab', 'fieldtrip');   % Directory containing Fieldtrip
-conf.dir.preproc   =   fullfile(conf.dir.root, 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
-conf.dir.prepemg   =   fullfile(conf.dir.root, 'prepemg');                  % Directory where files from function "prepemg" will be stored
+conf.dir.preproc   =   fullfile(conf.dir.root, 'processing', 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
+conf.dir.prepemg   =   fullfile(conf.dir.root, 'processing', 'prepemg');                  % Directory where files from function "prepemg" will be stored
 conf.dir.auc       =   fullfile(conf.dir.root, 'auc');                      % Directory for aucs
 conf.dir.regr      =   fullfile(conf.dir.prepemg,'Regressors');             % Directory where files from function "mkregr" will be stored
 conf.dir.event     =   conf.dir.preproc;                                    % Directory containing conditions, e.g. if you want to plot the conditions in mkregr
@@ -123,8 +122,9 @@ if strcmp(ProjectNr, '3024006.01')
   for n = 1:numel(Sub)
     TaskJsonFile = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'beh'),['^sub.*', Task, '.*_events\.json$']);
     Json = fileread(TaskJsonFile);
-    DecodedJson = jsondecode(Json);
-    if strcmp(DecodedJson.Group.Value, 'HC_PIT')
+%     DecodedJson = jsondecode(Json);
+%     if strcmp(DecodedJson.Group.Value, 'HC_PIT')
+    if contains(Json(1:60), 'HC_PIT')  
         Sel(n) = false;
         fprintf('Skipping sub-%s, healthy control\n', Sub{n})
     end
@@ -132,14 +132,14 @@ if strcmp(ProjectNr, '3024006.01')
 end
 
 Sub = Sub(Sel);
-Sub = {Sub{1} Sub{2} Sub{3} Sub{4}};    % Subset for testing purposes only
+% Sub = {Sub{1} Sub{2} Sub{3} Sub{4}};    % Subset for testing purposes only
+% Sub = {Sub{2}};
 FARMjobs = cell(numel(Sub),1);
 FREQjobs = cell(numel(Sub),1);
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
 conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
 for n = 1:numel(Sub)
 conf.sub.name   = {Sub{n}};
-% conf.sub.name   = conf.sub.name([true(NrToAnalyze,1); false(numel(Sub) - NrToAnalyze,1)]);    % Select the subjects
 Channels = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', conf.sub.name{1}], 'emg'), ['^sub.*' Task '.*channels.tsv$']);
 txtChannels = tdfread(Channels);
 nChannels = length(txtChannels.name);
@@ -163,8 +163,8 @@ conf.prepemg.hdrfile  = '/CurSub/&/CurSess/&/CurRun/&/FARM.vhdr/';  % Hdr file n
 conf.prepemg.precut   = 'no';     % If yes, it will cut out the data before the first volume marker. If you leave this as no, it should already be cut away
 conf.prepemg.sval     = 'V';      % Scan value in your marker file (usually 'V' after FARM);
 conf.prepemg.tr       = TR;    % Choose a fixed TR (repetition time) or enter 'detect' if you want the script to detect this
-conf.prepemg.dumscan  = 0;        % Dummyscans (Start of regressor will be at conf.prepemg.dumscan+1)
-conf.prepemg.prestart = 0;        % Scans before the start of your first scan (conf.prepemg.dumscan+1) you want to select (for example to account for the hanning taper, BOLD response etc). This data will be processed all the way, and only disregarded at the end of all analyses
+conf.prepemg.dumscan  = 5;        % Dummyscans (Start of regressor will be at conf.prepemg.dumscan+1)
+conf.prepemg.prestart = 3;        % Scans before the start of your first scan (conf.prepemg.dumscan+1) you want to select (for example to account for the hanning taper, BOLD response etc). This data will be processed all the way, and only disregarded at the end of all analyses
 conf.prepemg.timedat  = 0.001;   % The resolution of the time-frequency representation in seconds (can be used for cfg.cfg_freq.toi)
 if nChannels == 9
    conf.prepemg.chan     = {'right_extensor';  %1
@@ -235,7 +235,7 @@ conf.mkregr.reanalyzemeth = {  'regressor';
     }; % Method for re-analyzing the data ('regressor': create regressors; 'ps_save': only save average power spectrum)
 conf.mkregr.automatic = 'yes';
 conf.mkregr.automaticfreqwin = [2.99,8.1];
-conf.mkregr.automaticdir = fullfile('/project/3022026.01/analyses/EMG', Task, 'automaticdir');
+conf.mkregr.automaticdir = fullfile(conf.dir.root, 'automaticdir');
 conf.mkregr.file      = '/CurSub/&/CurSess/&/freqana/'; % Name of prepemg data (uses pf_findfile)
 conf.mkregr.scanname  = '|w*';                          % search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile)
 conf.mkregr.sample    = 1;                              % Samplenr of every scan which will be used to represent the tremor during scan (if you used slice time correction, use the reference slice timing here)
@@ -363,10 +363,10 @@ startdir = pwd;
 cd(cluster_outputdir)
 if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name{1} '/&/' Task '/'])) && conf.todo.Farm
     fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name{1} ' ---\n']);
-    FARMjobs{n} = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',3*60*60);  % Run on cluster ;
+    FARMjobs{n} = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',1*60*60);  % Run on cluster ;
 elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name{1} '/&/' Task '/'])) && conf.todo.Frequency_analysis
     fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name{1} ' ---\n']);
-    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', conf.sub.name, conf, cfg, 'memreq',4*1024^3,'timreq',3*60*60);  % Run on cluster
+    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', conf, cfg, 'memreq',8*1024^3,'timreq',1*60*60);  % Run on cluster
 else
     fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name{1} ' or not selected as task ---\n']);
 end
