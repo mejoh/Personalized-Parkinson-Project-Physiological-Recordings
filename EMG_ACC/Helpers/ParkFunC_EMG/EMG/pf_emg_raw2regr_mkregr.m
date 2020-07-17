@@ -344,7 +344,11 @@ for a = 1:nFiles
                     addsess = '';
                 end
                 if ~isfield(conf.mkregr,'data')
-                    savename    =   [CurSub '-' CurSess addsess '-' CurRun '_' CurChan '_' CurFreqstr(1) '-' CurFreqstr(3) 'Hz_regressors_' CurMeth];
+                    if strcmp(conf.mkregr.automatic,'yes')
+                        savename    =   [CurSub '-' CurSess addsess '-' CurRun '_' CurChan '_' CurFreqstr(1) 'Hz_regressors_' CurMeth];
+                    else
+                        savename    =   [CurSub '-' CurSess addsess '-' CurRun '_' CurChan '_' CurFreqstr(1) '-' CurFreqstr(3) 'Hz_regressors_' CurMeth];
+                    end
                 else
                     dot         =   strfind(CurFreqstr,'.');
                     bar         =   strfind(CurFreqstr,'-');
