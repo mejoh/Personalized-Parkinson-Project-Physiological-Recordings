@@ -402,7 +402,7 @@ conf.dir.event        =   '';                     % Event directory (usually you
 conf.mkregr.file            = '';                       % Name of prepemg data (leave empty for gui).
 conf.mkregr.data            = handles.tfr.acc;          % The field 'data' is reserved for regressors selected through the GUI. Instead of searching for a file it will use the data defined in handles.tfr.emg which is defined when the 'Show TFR' button is pressed.
 
-conf.mkregr.nscan     = 800;                       % Amount of scans your regressor should contain ('detect' to detect the amount in conf.dir.fmri.preproc)
+conf.mkregr.nscan     = 'detect';                       % Amount of scans your regressor should contain ('detect' to detect the amount in conf.dir.fmri.preproc)
 conf.mkregr.scanname  = '|w*';                          % Search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile);
 conf.mkregr.sample    = 1;                              % Samplenr of every scan which will be used to represent the tremor during scan (if you used slice time correction, use the reference slice timing here)
 conf.mkregr.zscore    = 'yes';                          % If yes, than the data will first be z-normalized
