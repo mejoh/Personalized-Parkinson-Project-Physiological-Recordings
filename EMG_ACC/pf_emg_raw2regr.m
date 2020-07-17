@@ -1,4 +1,4 @@
-function pf_emg_raw2regr(subject, conf, cfg)
+function pf_emg_raw2regr(conf, cfg)
 % pf_emg_raw2regr(conf,cfg,varargin) is a batch like function with the 
 % main goal to transform a raw EMG or Accelerometry signal into a regressor 
 % describing tremor fluctuations to be used in a general linear model for 
