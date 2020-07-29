@@ -7,9 +7,7 @@ function varargout = AccEmgChecker(varargin)
 % Here is the image name shown accomponied by 0 (no tremor or not the right peak is selected, 1 (tremor or right peak selected) or 2(unclear). 
 % This allows a clear overview of the data. 
 
-% It is important to change the paths to your images of interest (line 47),
-% NOTE - if that path contains more files than jpg files, it is important to add a piece of code scripting to find only the jpg files. 
-% It is important to change the save folder to your folder of interest (line 182)
+% Important to change user settings!
 
 
 % Begin initialization code - DO NOT EDIT
