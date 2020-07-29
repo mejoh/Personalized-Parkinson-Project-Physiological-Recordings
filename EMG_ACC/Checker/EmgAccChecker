@@ -1,26 +1,25 @@
 function varargout = AccEmgChecker(varargin)
+% NOTE - It is necessary to also download the AccEmgChecker.fig
+
 % This gui provides an efficient way to loop though all the powerspectra images and define presence of tremor and if the corrected peak was selected. 
 % Per image, the user has the option to define the selected peak as right/not right/unclear and the tremor as present/not present/unclear.
 % The output is a xlsx and mat table for Tremor and Peak data separately. 
 % Here is the image name shown accomponied by 0 (no tremor or not the right peak is selected, 1 (tremor or right peak selected) or 2(unclear). 
 % This allows a clear overview of the data. 
 
-% It is important to change the paths to your images of interest (line 47),
-% NOTE - if that path contains more files than jpg files, it is important to add a piece of code scripting to find only the jpg files. 
-% It is important to change the save folder to your folder of interest (line 182)
+% Important to change user settings!
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Start script %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @AccEmgChecker_OpeningFcn, ...
-                   'gui_OutputFcn',  @AccEmgChecker_OutputFcn, ...
-                   'gui_LayoutFcn',  [], ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @AccEmgChecker_OpeningFcn, ...
+    'gui_OutputFcn',  @AccEmgChecker_OutputFcn, ...
+    'gui_LayoutFcn',  [], ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
-   gui_State.gui_Callback = str2func(varargin{1});
+    gui_State.gui_Callback = str2func(varargin{1});
 end
 
 if nargout
@@ -33,8 +32,6 @@ end
 
 % --- Executes just before AccEmgChecker is made visible.
 function AccEmgChecker_OpeningFcn(hObject, eventdata, handles, varargin)
-% Choose default command line output for AccEmgChecker
-handles.output = hObject;
 
 %% OS CHECK
 if ispc
@@ -46,17 +43,25 @@ else
     pfProject="/project/";
 end
 
-FilesDir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest", "prepemg", "Regressors", "Check_automaticselection") ; 
-AllFiles = struct2table(dir(FilesDir)); 
+%%%%%%%%%%%%%%%%%%--------------------------- START USER SETTINGS
+handles.savedir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest");
+handles.filesDir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest", "prepemg", "Regressors", "Check_automaticselection") ;
+%%%%%%%%%%%%%%%%%%--------------------------- END USER SETTINGS
+
+% Choose default command line output for AccEmgChecker
+handles.output = hObject;
+
+%% OS CHECK
+AllFiles = struct2table(dir(handles.filesDir));
 handles.files = AllFiles.name(3:end);
-Img = imread(handles.files {1}); 
-axes(handles.axes1)
+Img = imread(handles.files {1});
+axes(handles.axes1);
 imshow(Img);
 
-handles.Peak.cVal = [] 
-handles.Peak.cName = [] 
-handles.Tremor.cVal = []
-handles.Tremor.cName = [] 
+handles.Peak.cVal = [] ;
+handles.Peak.cName = [] ;
+handles.Tremor.cVal = [] ;
+handles.Tremor.cName = [] ;
 
 handles.index = 1;
 Cek(hObject, eventdata, handles);
@@ -66,9 +71,9 @@ guidata(hObject, handles);
 function varargout = AccEmgChecker_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ------- Prev and Next Sub buttons -----%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Executes on button press in PrevSub.
 function PrevSub_Callback(hObject, eventdata, handles)
@@ -76,83 +81,89 @@ handles.output = hObject;
 handles.index = handles.index - 1;
 Cek(hObject, eventdata, handles);
 Img = imread(handles.files{handles.index});
-axes(handles.axes1)
+axes(handles.axes1);
 imshow(Img);
 guidata(hObject, handles);
 
 
 % --- Executes on button press in NextSub.
-function NextSub_Callback(hObject, eventdata, handles, Settings)
+function NextSub_Callback(hObject, eventdata, handles)
 handles.output = hObject;
 handles.index = handles.index + 1;
 Cek(hObject, eventdata, handles);
 Img = imread(handles.files{handles.index});
-axes(handles.axes1)
+axes(handles.axes1);
 imshow(Img);
 guidata(hObject, handles);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%------Cek function to display img-------%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Cek(hObject, eventdata, handles)
 handles.output = hObject;
 n = length(handles.files);
-if handles.index > 1,  set(handles.PrevSub,'enable','on');
-else                           set(handles.PrevSub,'enable','off'); end
-if handles.index < n, set(handles.NextSub,'enable','on');
-else                           set(handles.NextSub,'enable','off'); end
+if handles.index > 1
+    set(handles.PrevSub,'enable','on');
+else
+    set(handles.PrevSub,'enable','off');
+end
+if handles.index < n
+    set(handles.NextSub,'enable','on');
+else
+    set(handles.NextSub,'enable','off');
+end
 guidata(hObject, handles);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%------Button presses Tremor -------%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % If tremor, than 1
-% If no tremor, than 0. 
-% If unsure tremor, than 2. 
+% If no tremor, than 0.
+% If unsure tremor, than 2.
 
 
 % --- Executes on button press in TremorN.
 function TremorN_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Tremor.cVal(handles.index,1) = 0; 
-handles.Tremor.cName{handles.index,1} = handles.files{handles.index}
+handles.Tremor.cVal(handles.index,1) = 0;
+handles.Tremor.cName{handles.index,1} = handles.files{handles.index};
 guidata(hObject, handles);
 
 % --- Executes on button press in TremorY.
 function TremorY_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Tremor.cVal(handles.index,1) = 1; 
-handles.Tremor.cName{handles.index,1} = handles.files{handles.index}
+handles.Tremor.cVal(handles.index,1) = 1;
+handles.Tremor.cName{handles.index,1} = handles.files{handles.index};
 guidata(hObject, handles);
 
 
 % --- Executes on button press in TremorU.
 function TremorU_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Tremor.cVal(handles.index,1) = 2; 
-handles.Tremor.cName{handles.index,1} = handles.files{handles.index}
+handles.Tremor.cVal(handles.index,1) = 2;
+handles.Tremor.cName{handles.index,1} = handles.files{handles.index};
 guidata(hObject, handles);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%------Button presses Peak-------%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % If correct peak was selected, than 1
-% If not the correct peak was selected, than 0. 
-% If you are unsure that the correct peak was selected, than 2. 
+% If not the correct peak was selected, than 0.
+% If you are unsure that the correct peak was selected, than 2.
 
 % --- Executes on button press in PeakN.
 function PeakN_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Peak.cVal(handles.index,1) = 0; 
-handles.Peak.cName{handles.index,1} = handles.files{handles.index}
+handles.Peak.cVal(handles.index,1) = 0;
+handles.Peak.cName{handles.index,1} = handles.files{handles.index};
 guidata(hObject, handles);
 
 
 % --- Executes on button press in PeakY.
 function PeakY_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Peak.cVal(handles.index,1) = 1; 
-handles.Peak.cName {handles.index,1} = handles.files{handles.index}
+handles.Peak.cVal(handles.index,1) = 1;
+handles.Peak.cName {handles.index,1} = handles.files{handles.index};
 guidata(hObject, handles);
 
 
@@ -160,34 +171,24 @@ guidata(hObject, handles);
 % --- Executes on button press in PeakU.
 function PeakU_Callback(hObject, eventdata, handles)
 Cek(hObject, eventdata, handles);
-handles.Peak.cVal(handles.index,1) = 2; 
-handles.Peak.cName {handles.index,1}= handles.files{handles.index}
+handles.Peak.cVal(handles.index,1) = 2;
+handles.Peak.cName {handles.index,1}= handles.files{handles.index};
 guidata(hObject, handles);
 
 
 
 % --- Executes on button press in savebutton.
 function savebutton_Callback(hObject, eventdata, handles)
-if ispc
-    pfProject="P:\";
-elseif isunix
-    pfProject="/project/";
-else
-    warning('Platform not supported - Linux settings are used')
-    pfProject="/project/";
-end
 Cek(hObject, eventdata, handles);
 guidata(hObject, handles);
-Tremor_check = struct2table(handles.Tremor); 
-Peak_check = struct2table(handles.Peak); 
+Tremor_check = struct2table(handles.Tremor);
+Peak_check = struct2table(handles.Peak);
 
-savedir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest")
-writetable (Tremor_check, fullfile(savedir, "Tremor_check.xlsx"), 'Sheet', 1 ); 
-writetable (Peak_check, fullfile(savedir, "Peak_check.xlsx"), 'Sheet', 1 ); 
-save (fullfile(savedir, "Tremor_check.mat"), 'Tremor_check'); 
-save (fullfile(savedir, "Peak_check.mat"), 'Peak_check'); 
+writetable (Tremor_check, fullfile(handles.savedir, "Tremor_check.xlsx"), 'Sheet', 1 );
+writetable (Peak_check, fullfile(handles.savedir, "Peak_check.xlsx"), 'Sheet', 1 );
+save (fullfile(handles.savedir, "Tremor_check.mat"), 'Tremor_check');
+save (fullfile(handles.savedir, "Peak_check.mat"), 'Peak_check');
 disp 'Data is saved'
-
 
 % --- Executes during object creation, after setting all properties.
 function edit3_Callback(hObject, eventdata, handles)
