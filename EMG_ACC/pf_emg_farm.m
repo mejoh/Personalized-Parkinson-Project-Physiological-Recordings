@@ -6,21 +6,19 @@ function pf_emg_farm(subjects, conf)
 % Configured by Jitse Amelink for Personalized Parkinson Project, fall 2019
 % $ParkFunC
 tic;
-sel   = 1; %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
-conf.sub.name   = conf.sub.name(sel); %COPIED FROM SETTINGS, NOT SURE WHY IT IS THERE AT ALL
 
 %% ------------------------------------------------------------------------
 % Add packages
 %--------------------------------------------------------------------------
-if isempty(which('ft_defaults')) %check if fieldtrip is installed
-    addpath(path.Fieldtrip); %Add fieldtrip
-    ft_defaults
-end
-addpath(path.SPM); %Add SPM12
-addpath(fullfile(path.Fieldtrip, 'qsub'));
-addpath(genpath(path.ParkFunc));  %Add ParkFunc
-addpath(conf.dir.eeglab); eeglab; %Add eeglab
-addpath(genpath(conf.dir.Farm)); %Add FARM
+% if isempty(which('ft_defaults')) %check if fieldtrip is installed
+%     addpath(path.Fieldtrip); %Add fieldtrip
+%     ft_defaults
+% end
+% addpath(path.SPM); %Add SPM12
+% addpath(fullfile(path.Fieldtrip, 'qsub'));
+% addpath(genpath(path.ParkFunc));  %Add ParkFunc
+% addpath(conf.dir.eeglab); eeglab; %Add eeglab
+% addpath(genpath(conf.dir.Farm)); %Add FARM
 
 %% ------------------------------------------------------------------------
 % Initialize
@@ -339,8 +337,8 @@ for a = 1:nFiles
         EEG.chanlocs = [EEG.chanlocs EEGalt.chanlocs];
         
         % --- Export --- %
-        fname   =   char(strcat(conf.dir.save, '/',subjects, '___task1_FARM'));
-        pop_writebva(EEG,fname);
+        fname = fullfile(conf.dir.save,[char(subjects) '_' char(conf.sub.sess) '_' char(conf.sub.run) '_FARM']);
+        pop_writebva(EEG,fname);    % <<< NOTE!!! pop_writebva will cut fname at . in ProjectNr, function needs to be altered
         fprintf('%s\n',['Saved to ' fname]);
         
         % --- delete workdir --- %
@@ -348,7 +346,7 @@ for a = 1:nFiles
         try
             cd(homer)
         catch
-            cd /home/control/tespee
+            cd ~
         end
         
         if strcmp(conf.dir.preworkdel,'yes')
@@ -360,7 +358,8 @@ for a = 1:nFiles
         trs    = latenc(2:end)-latenc(1:end-1);
         uTr    = unique(trs);
         incTr  = uTr<(5000*Tr) | uTr>(5000*Tr);
-        iIncor = find(trs==uTr(incTr));
+%         iIncor = find(trs==uTr(incTr));
+        iIncor = find(ismember(trs,uTr(incTr)));
         disp(['Unique TRs: ' num2str(uTr)])
         warning(['(Some of the) scanmarkers do not match your specified TR (probably scan number: '  num2str(iIncor+2) '-' num2str(iIncor+1) ' )']);
         

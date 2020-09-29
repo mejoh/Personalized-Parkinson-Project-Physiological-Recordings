@@ -1,0 +1,73 @@
+- chipping 1 of 2 volumes??? (en wat als het emg-based is?)
+- progressbar in create_emg_based_conditi... (en eingelijk overal waar EMG wordt geladen; traag via netwerk)
+- horizontale lijn in create_emg_based_cond... verdwenen?
+
+- in personalised: low pass is one of first steps in run all?
+- normalisatie van EMG: op twee plekken: eerst de spieren, daarna ook regr-componenten?
+- out of measurement data in personalized?
+- scan nulling: exclude beide strekken uit analyse door extra kolom in model?
+
+not sure
+- klopt orientatie van MRI data?
+- is het emg wel geladen op alle plekken?
+- upsample/downsample when convolving: factor 16? interp()? Waarom niet het ruwe EMG minder grof opdelen?
+- x=[x; 696]?? in o.a. create_block_emg
+
+wishlist
+- keuzelijstje met PP nummers in select_dataset.fig
+- info dlg met copyright
+- twee lijstjes met spieren en een 'use this' button (ipv 8x checkbox) in select_muscles.fig
+- emg_corr maakt nogal wat 'overbodige' bestanden aan...
+- feedback en/off ready in run-all in standard emg artefact correction
+
+final
+- documentatie bijwerken
+
+done
+- oude plugin hernoemen/zippen
+- meer ruimte tussen checkboxjes in select_muscles
+- twee versies mri preprocessing: warp stap optioneel: lastig zonder aanpassing script johan
+- johan vragen welke emg_corr routine/function gebruikt moet worden. Waarom eeglab aanroepen? Bij functie-versie: geen automatische opslag van emg_corrected.mat
+- ortho all blocks opsplitsen in afzonderlijke regressoren
+
+
+terminologie
+~~~~~~~~~~~~
+design matrix:
+   In SPM:
+      "The design matrix has one row for each scan and one column for each effect or
+      explanatory variable. (e.g. regressor or stimulus function)."
+       
+      "Responses can be either event- or epoch related, where the latter model 
+      involves prolonged and possibly timevarying responses to state-related 
+      changes in experimental conditions. Event-related response are modelled 
+      in terms of responses to instantaneous events. Mathematically they are 
+      both modelled by convolving a series of delta (stick) or box-car functions, 
+      encoding the input or stimulus function, with a set of hemodynamic basis functions."
+      
+      "You are allowed to combine both event- and epoch-related responses in the same model and/or
+      regressor. Any number of condition (event or epoch) types can be specified. Epoch and eventrelated
+      responses are modeled in exactly the same way by specifying their onsets [in terms of onset
+      times] and their durations. Events are specified with a duration of 0. If you enter a single number
+      for the durations it will be assumed that all trials conform to this duration.For factorial designs,
+      one can later associate these experimental conditions with the appropriate levels of experimental
+      factors.
+      
+      De design matrix bevat: de condities en eventuele regressoren.
+      
+   Condities: 
+      De NxR design matrix wordt gedefinieerd door een mat-file waarin voor iedere experimentele conditie 
+      onsets en durations zijn gespecificeerd. Deze waarden zijn dus nog niet geconvolueerd. 
+      In EMG_fMRI zijn dit de block*.mat files. This *.mat file must include the following 
+      cell arrays: names, onsets and durations   
+	
+   Regressoren:
+      Regressors are additional columns included in the design matrix, which may model effects that
+      would NOT be convolved with the haemodynamic response. One such example would be the
+      estimated movement parameters, which may confound the data.
+      Multiple regressors can be defined by creating a *.mat file containing a matrix R. Each column of R 
+      will contain a different regressor. When SPM creates the design matrix the regressors 
+      will be named R1, R2, R3, ..etc. Since SPM will not convolve regressors, this must be done beforehand.
+      
+      
+      

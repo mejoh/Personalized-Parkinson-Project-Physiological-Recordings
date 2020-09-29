@@ -1,6 +1,11 @@
+function ChangeMarkersAllSubs(Task, ProjectNr)
+% Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
+% ProjectNr = '3024006.01' / '3022026.01';       % From which subjects do you want to process subjects
+
 %% ToDo
 %Improve descriptions
 %Improve error handling
+%Task = rest errors after a few subjects
 
 %% OS CHECK
 if ispc
@@ -15,27 +20,25 @@ end
 
 %% USER SETTINGS
 %Options: 
-Task = "reward";                    % Which task would you like to process? (motor / reward / rest)
-ProjectNr = "3024006.01";           % Which project would you like to process? (3022026.01 / 3024006.01)
 
 %Standard settings: 
-settings.RawFolder  = fullfile(pDir, 'raw');   %We count the number of images in the raw folder
+settings.RawFolder  = fullfile(pfProject, ProjectNr, 'raw');   %We count the number of images in the raw folder
 
 %Settings specific to task
 if strcmp(Task, "motor")
     settings.TR         = 1;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "motor", "emg", "corrected");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "motor");                 %Output folder for the new files
     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "reward")
     settings.TR         = 2.24;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*cmrr_3.5iso_me5_TR2240", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "reward", "emg_acc", "test");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "reward");                 %Output folder for the new files
     settings.NumberOfEchos = 5;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "rest")
     settings.TR         = 0.735;                                                                %double with TR time in seconds
     settings.ScanFolder = fullfile("ses-mri01", "0*MB8_fMRI_fov210_2.4mm_ukbiobank", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "rest", "emg", "corrected");                 %Output folder for the new files
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "rest");                 %Output folder for the new files
     settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 end
 
@@ -247,9 +250,9 @@ switch Task
     case "rest"
         cTask = 'rest';
     case "reward" 
-        cTask = 'task';
+        cTask = 'reward';
     case "motor" 
-        cTask = 'task';
+        cTask = 'motor';
 end
 
 %Check original file is present
@@ -262,7 +265,7 @@ if strcmp(ProjectNr, "3022026.01")  % ParkinsonOpMaat
         cFile = string(join([vmrkPath(end).folder, filesep, vmrkPath(end).name])); %Note that I only take the last file (if there are multiple i.g. task1, task2)
     end
 elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
-    vmrkPath = dir(fullfile(pDir, 'raw', ['sub-' char(cSub)], 'ses-mri01', ['*' char(Task) '_physio'], ['*', cTask, '*.vmrk']));
+    vmrkPath = dir(fullfile(pDir, 'bids', ['sub-' char(cSub)], 'emg', ['*', cTask, '*.vmrk']));
     if isempty(vmrkPath)            % Check for subjects with missing vmrk file
         fprintf("Skipping sub-%s with no vmrk file\n", cSub)
         cFile = missing;
@@ -271,5 +274,6 @@ elseif strcmp(ProjectNr, "3024006.01") % ParkinsonInToom
     end
 else
     fprintf("Project number not recognized as either PIT or POM, aborting...\n")
+end
 end
 end

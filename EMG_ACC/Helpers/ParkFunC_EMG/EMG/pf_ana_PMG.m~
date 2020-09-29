@@ -1,0 +1,114 @@
+function pf_ana_PMG(conf,varargin)
+%
+% Function analyses EDF+ files, specifically for PolyMyoGraphy (PMG) data. 
+%
+%
+% -- UNDER CONSTRUCTION --
+% HDR.prefilt, what does N mean??
+%
+%
+
+%% Warming Up
+
+if nargin < 2
+	varargin{1}	=	'plotraw';
+%     varargin{1} =   'preproc';
+end
+
+%% Configuration
+
+if nargin < 1
+
+tic; close all; clc
+	
+% ---- Directories -----%
+
+if ismac
+	conf.dir.root    =   '/Users/michieldirkx/Documents/Tremor PMG/data';
+elseif isunix
+	conf.dir.root    =   '/home/action/micdir/data/PMG/';
+end
+
+% ---- Subject info ----%
+
+conf.sub.name    =   {'p01';'p02';'p03';'p04';'p05';
+					  'p06';'p07';'p08';'p09';'p10';
+					  'p11';'p12';'p13';'p14';'p15';
+					  'p16';'p17';'p18';'p19';'p20';
+                      'p38';};
+conf.sub.hand    =   [zeros(1,21)];                                    % Fill in if patient main measurement was right (=1) or left (=0)
+conf.sub.sess	 =   {'OFF'};
+
+sel		         =   21;
+conf.sub.name    =   conf.sub.name(sel);
+conf.sub.hand    =   conf.sub.hand(sel);
+
+% ---- Experiment info ---%
+
+conf.exp.fname   = '/CurSub/&/CurSess/&/PMG/&/CurMont/&/2.edf/';			 % File name according to search criteria (see PF_str2var & PF_find_fullfile)
+conf.exp.chan    = {'EEG 1-2'    'm. deltoideus (R)';            % 1      % Channel name (as labeled by the headbox) followed by your own name. Use a new row for every new channel, and a new column for your own name. Leave blanc ('') if original channel names used.
+                    'EEG 3-4'    'm. biceps brachii (R)';        % 2             
+                    'EEG 5-6'    'm. triceps (R)';               % 3
+                    'EEG 7-8'    'm. ext. dig. communis (R)';    % 4
+                    'EEG 9-10'   'm. flex. carpi. radialis (R)'; % 5
+                    'EEG 11-12'  'm. abd. pol. brevis (R)';      % 6
+                    'EEG 13-14'  'm. inter. dors. 1 (R)';        % 7
+                    'EEG 33-34'  'm. deltoideus (L)';            % 8
+                    'EEG 35-36'  'm. biceps brachii (L)';        % 9                
+                    'EEG 37-38'  'm. triceps (L)';               % 10
+                    'EEG 39-40'  'm. ext. dig. communis (L)';    % 11
+                    'EEG 41-42'  'm. flex. carpi. radialis (L)'; % 12
+                    'EEG 43-44'  'm. abd. pol. brevis (L)';      % 13
+                    'EEG 45-46'  'm. inter. dors. 1 (L)';        % 14
+                    'EEG 31-32'  'Right Accelerometer';          % 15
+                    'EEG 61-62'  'Left Accelerometer';           % 16
+                    'EEG 63-64'  'ECG';                          % 17
+                    'EEG Photic' 'Photic';                  };   % 18
+
+% sel              =  [1:7 11:12 15:17];     % Right handed
+sel              =  1:17;
+conf.exp.chan    =  conf.exp.chan(sel,:);
+
+% --- Figure Settings --- %
+
+conf.fig.raw.msp     =  1;              % Maximum amount of subplots
+
+% ===== FIELDTRIP CONFIGURATION ===== %
+
+
+
+
+
+end
+
+%% Plot Raw Data
+
+H = strfind(varargin,'plotraw');
+if isempty([H{:}]) == 0
+	plot_rawdat(conf)
+end
+
+%% Preprocess Data
+
+H = strfind(varargin,'preproc');
+if isempty (H{:}) == 0
+    preproc(conf,cfg_pre,cfg_trl);
+end
+
+%% Cooling Down
+
+T   =   toc;
+fprintf('\n%s\n',['Mission accomplished after ' num2str(T/60) ' minutes!!'])
+
+
+
+
+
+
+
+
+
+
+
+
+

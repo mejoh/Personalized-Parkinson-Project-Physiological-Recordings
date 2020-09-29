@@ -1,0 +1,369 @@
+function varargout = create_emg_based_conditions(varargin)
+% CREATE_EMG_BASED_CONDITIONS M-file for create_emg_based_conditions.fig
+%      CREATE_EMG_BASED_CONDITIONS, by itself, creates a new CREATE_EMG_BASED_CONDITIONS or raises the existing
+%      singleton*.
+%
+%      H = CREATE_EMG_BASED_CONDITIONS returns the handle to a new CREATE_EMG_BASED_CONDITIONS or the handle to
+%      the existing singleton*.
+%
+%      CREATE_EMG_BASED_CONDITIONS('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in CREATE_EMG_BASED_CONDITIONS.M with the given input arguments.
+%
+%      CREATE_EMG_BASED_CONDITIONS('Property','Value',...) creates a new CREATE_EMG_BASED_CONDITIONS or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before create_emg_based_conditions_OpeningFcn gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to create_emg_based_conditions_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help create_emg_based_conditions
+
+% Last Modified by GUIDE v2.5 06-Nov-2009 15:58:30
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @create_emg_based_conditions_OpeningFcn, ...
+                   'gui_OutputFcn',  @create_emg_based_conditions_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+
+
+% --- Executes just before create_emg_based_conditions is made visible.
+function create_emg_based_conditions_OpeningFcn(hObject, eventdata, handles, varargin)
+    global EEG;
+    
+    % Choose default command line output for create_emg_based_conditions
+    handles.output = hObject;
+    handles.protocol = varargin{1};
+    handles.thresholds = zeros(1,EEG.nbchan);
+    handles.current_muscle = 0;
+    handles.left_muscle = 0;
+    handles.right_muscle = 0;
+    
+    if EEG.nbchan<=0
+        set(handles.lbl_muscle,'String','NO EMG DATA AVAILABLE!');
+        set(handles.txt_threshold,'Enable','off');
+    else
+        handles.current_muscle = 1;
+        
+        for iChannel=1:EEG.nbchan
+            t = EEG.chanlocs(iChannel).labels;
+            set(handles.(['radio_muscle' num2str(iChannel)]),'String',t);
+        end
+    end
+    
+    % Update handles structure
+    guidata(hObject, handles);
+    
+    refresh_GUI(handles);
+
+    % UIWAIT makes create_emg_based_conditions wait for user response (see UIRESUME)
+    % uiwait(handles.figure1);
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = create_emg_based_conditions_OutputFcn(hObject, eventdata, handles) 
+    % varargout  cell array for returning output args (see VARARGOUT);
+    % Get default command line output from handles structure
+    varargout{1} = handles.output;
+
+% calculate EBG activity of EEG.data(i) and put result into EEG.channel
+function calculate_EMG_activity(muscle_nr)
+    global EEG;
+
+    EEG.channel=EEG.data(muscle_nr,:);
+    EEG.channel=abs(EEG.channel);
+    a=1;
+    c=120; %aantal samples waarover je wilt middelen
+    b=ones(1,c);
+    b=b*(1/c);
+%     t=1:length(EEG.channel);
+%     figure
+%     plot(t,EEG.channel,'r'); hold on; %Om de threshold uit af te lezen
+    EEG.channel=filter(b,a,EEG.channel);
+%     plot(t,EEG.channel,'g');
+%     hold off; 
+
+    % paul fixed a #volumes bug here: students used the number of events, which is not correct because you should only use 'V' events
+    % we now assume that the first volume starts at the first sample and then use TR to chop everything into desampled activities
+    [ onsetSamples nSamplesPerEpoch ] = get_volume_onset_indices(EEG);
+    nEpochs = length(onsetSamples);
+
+    desampled=zeros(nEpochs,1);
+    for i=1:nEpochs
+        b = onsetSamples(i);
+        e = b + nSamplesPerEpoch - 1;
+        desampled(i) = mean(EEG.channel(b:e));
+    end
+    
+    EEG.channel=desampled;
+        
+function refresh_GUI(handles)
+    global EEG;
+    if handles.current_muscle>0
+        calculate_EMG_activity(handles.current_muscle);
+
+        t = EEG.chanlocs(handles.current_muscle).labels;
+        plot(handles.axes1,EEG.channel);
+        
+        set(handles.lbl_muscle,'String',[handles.protocol ', muscle ' t]);
+        
+        value = handles.thresholds(handles.current_muscle);
+        
+        if value>0
+            % draw threshold as horizontal line
+            hold(handles.axes1, 'on');
+            plot(handles.axes1, [1  length(EEG.channel)],[value value]);
+            hold(handles.axes1, 'off');
+            
+            str = num2str(value);
+        else
+            str = [];
+        end
+        set(handles.txt_threshold,'String',str);
+        
+        if handles.left_muscle>0 && handles.right_muscle>0
+            set(handles.btn_save,'Enable','on');
+        end
+    end
+    
+    
+function txt_threshold_Callback(hObject, eventdata, handles)
+    % user entered a new threshold
+    if handles.current_muscle>0
+        try
+            value = str2double(get(hObject,'String'));
+            handles.thresholds(handles.current_muscle) = value;
+%             if handles.current_muscle<length(handles.thresholds)
+%                 % automatically step through all muscles as long as muscle selection groups are hidden
+%                 if strcmpi(get(handles.button_group_left_muscle,'Visible'),'off')
+%                     handles.current_muscle = handles.current_muscle + 1;
+%                 end
+%                 refresh_GUI(handles);
+%             else
+%                 % show muscles selection panels once all thresholds have been entered
+%                 set(handles.button_group_left_muscle,'Visible','on');
+%                 set(handles.button_group_right_muscle,'Visible','on');
+%             end
+            % save modifications back
+            guidata(hObject, handles);
+            refresh_GUI(handles);
+        catch
+            lasterror
+        end
+    end
+
+% --- Executes during object creation, after setting all properties.
+function txt_threshold_CreateFcn(hObject, eventdata, handles)
+    if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+        set(hObject,'BackgroundColor','white');
+    end
+
+
+% --- Executes when selected object is changed in button_group_left_muscle.
+function button_group_left_muscle_SelectionChangeFcn(hObject, eventdata, handles)
+    str = get(eventdata.NewValue,'Tag'); % Get Tag of selected object.
+    handles.left_muscle = str2double(str(end)); % last character should be muscle #
+    handles.current_muscle = handles.left_muscle;
+    % Update handles structure
+    guidata(hObject, handles);
+    refresh_GUI(handles);
+
+% --- Executes when selected object is changed in button_group_right_muscle.
+function button_group_right_muscle_SelectionChangeFcn(hObject, eventdata, handles)
+    str = get(eventdata.NewValue,'Tag'); % Get Tag of selected object.
+    handles.right_muscle  = str2double(str(end)); % last character should be muscle #
+    handles.current_muscle = handles.right_muscle;
+    % Update handles structure
+    guidata(hObject, handles);
+    refresh_GUI(handles);
+
+
+% --- Executes on button press in btn_cancel.
+function btn_cancel_Callback(hObject, eventdata, handles)
+    close;
+
+    
+% --- Executes on button press in btn_save.
+function btn_save_Callback(hObject, eventdata, handles)
+    emg_fmri_globals; % make sure this is the first call in the fn
+
+    ppdir = fullfile(EMG_fMRI_study_dir,'pp',EMG_fMRI_patient);
+    protocoldir = fullfile(ppdir,handles.protocol);
+    regressordir = fullfile(protocoldir,'regressor');
+
+    % need TR
+    load(fullfile(protocoldir,'parameters'));
+    tr = parameters(1);
+    
+    for j=1:EEG.nbchan
+        % first make sure that EEG.channel is filled with activity of EEG.data(j)
+        calculate_EMG_activity(j);
+        
+        nn=length(EEG.channel);
+        design=zeros(1,nn); % paul preallocated vector
+        thres = handles.thresholds(j);
+
+        for i=1:nn
+            if EEG.channel(i)>=thres
+                design(i)=1;
+    %         else
+    %             design(i)=0;
+            end  
+        end
+
+        % Kleine afwijkingen in het design aanpassen
+        for i=(2:2:(nn-1))
+            if design(i)~=design(i-1)&& design(i)~=design(i+1)
+               design(i)=design(i-1);
+            end 
+        end
+
+        % Opslaan in de map regressor
+        filepath = fullfile(regressordir,['design' num2str(j) '.mat']);
+        save(filepath,'design');
+        disp(['saving ' filepath]);
+    end
+    
+    % the following file is not required in the software anymore, but will
+    % be saved f.y.i. (note that this txt file in the regressor dir
+    % conflicts a bit with the other file regressor txt files)
+    filepath = fullfile(regressordir,'thresholds.txt');
+    thresholds_to_save = handles.thresholds; % create a local copy to save
+    save(filepath,'thresholds_to_save','-ascii');
+    disp(['saving ' filepath]);
+    
+    %Kies hier de spieren waarbij de threshold het beste bepaald kon
+    %worden, dat wil zeggen dat bijv. voor een rechterspier rechts strekken
+    %en beide strekken boven de threshold liggen, maar links strekken en
+    %rust onder de threshold liggen. Kies van elke arm 1 beste spier!
+    load(fullfile(regressordir,['design' num2str(handles.right_muscle) '.mat']));
+    rechts_strekken = design;
+    load(fullfile(regressordir,['design' num2str(handles.left_muscle) '.mat']));
+    links_strekken = design;
+    
+    % variabele aanmaken voor aantal 'scans'. Haal je uit het aantal events van de EMG data
+    % % scans = EEG.event;
+    % % scans = length(scans);
+    scans = length(rechts_strekken); % ???? weird ???? the students used the EMG from the base here, which can be empty or from other data set!!!
+    
+    %Bepalen wanneer beide armen de taak uitvoeren
+    beide_strekken=zeros(1,scans);
+    for i=1:scans
+        if links_strekken(i)==1 && rechts_strekken(i)==1
+            beide_strekken(i)=1;
+            links_strekken(i)=0;
+            rechts_strekken(i)=0;
+        end
+    end
+
+    %Bepalen wanneer er rust is
+    rust=zeros(1,scans);
+    for i=1:scans
+       if links_strekken(i)==0 && rechts_strekken(i)==0 && beide_strekken(i)==0
+           rust(i)=1;
+       end
+    end
+    
+
+    m=[links_strekken; rechts_strekken ; beide_strekken; rust];
+    m=m';
+
+    
+%     handles_to_close(end+1) = figure; 
+%     imagesc(m) % Het model aan de hand van de proefpersoon zijn EMG
+    %Vanaf hier kan er weer verder gewerkt worden volgens de bestaande methoden. 
+
+    % paul moved this from ppdir to regressordir
+    filepath = fullfile(regressordir,'design_matrix.mat');
+    save(filepath,'m');
+    disp(['saving ' filepath]);
+    
+
+    names=cell(1,4);
+    names{1}='links_strekken';
+    names{2}='rechts_strekken';
+    names{3}='beide_strekken';
+    names{4}='rust';
+
+    
+
+    onsets=cell(1,4);
+    for i=1:4
+        deel_m=m(:,i)';
+        for j=1:(length(deel_m)-1)
+            if j==1
+                 % FIX 2010-04-22: allow onset at first volume (no need to insert one explicitly anymore for rest condition)
+                if deel_m(1)==1
+                    onsets{i} = 0;
+                end
+            elseif deel_m(j)==0 && deel_m(j+1)==1
+                onsets{i} = [ onsets{i} j ]; % FIX 2010-04-22: do not insert index (j+1) 
+                                             % i.e. the onset time of the first volume should be 0 (or even better: TR/2)
+            end 
+        end
+        onsets{i} = onsets{i}.*tr; % FIX 2010-04-22: do not round the onsets at this point!
+    end
+    x=[onsets{1}(:);onsets{2}(:);onsets{3}(:);onsets{4}(:)];
+    x=sort(x);
+    x=[x; scans*tr]; % append a fake onset at the end to be able to calculate the duration of the last epoch
+    
+
+    
+    durations=cell(1,4);
+    for i=1:(length(x)-1)
+        d=x(i+1)-x(i);
+        for j=1:4
+            for p=1:length(onsets{j})
+                if x(i)==onsets{j}(p)
+                    durations{j}=[durations{j} d];
+                end
+            end
+        end
+    end
+
+    
+    %DIT TOEGEVOEGD OP 25-09-2012
+    onsets = onsets(1,2);
+    durations = durations(1,2);
+    names = names(1,2);
+    
+    %TOT HIER!!!
+
+    filepath = fullfile(regressordir,'block_emg.mat');
+    [filename pathname ] = uiputfile('*.mat','Save block emg as',filepath);
+    if filename~=0
+        filepath = fullfile(pathname, filename);
+        save(filepath,'onsets','durations','names');
+        message = ['saving ' filepath];
+        disp(message);
+    end
+    
+   %     filepath = fullfile(regressordir,'block_emg.mat');
+   % [filename pathname ] = uiputfile('*.mat','Save block emg as',filepath);
+   %if filename~=0
+   %     filepath = fullfile(pathname, filename);
+   %     save(filepath,'onsets','durations','names');
+   %     message = ['saving ' filepath];
+   %     disp(message);
+   % end
+    
+    close; % TODO some feedback before closing ??? 
+    
+    

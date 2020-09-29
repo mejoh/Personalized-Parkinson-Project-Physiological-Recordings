@@ -1,32 +1,67 @@
-%% Exampleruncluster
-% Run FARM and Frequnecy analysis on cluster, after those peak frequency
+function EMGACC_runcluster(Task, ProjectNr)
+% Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
+% ProjectNr = '3024006.01' / '3022026.01';       % From which subjects do you want to process subjects
+
+% Dependencies
+% Settings
+% SETTINGS pf_emg_raw2regr.m & pf_emg_farm.m
+% Directories
+% Subjects
+% Frequency Analysis ('prepemg')
+% Frequency Analysis OPTIONAL
+% Make Regressor ('mkregressor')
+% FieldTrip Configuration
+% File info 
+% Preprocessing and slice triggers
+% Additional methods
+% Call functions
+% Final step: select peak frequency and channel, create regressor
+
+%% EMGACC_runcluster
+% Run FARM and Frequency analysis on cluster, after those peak frequency
 % and channel selection should be done. See end of this script.
 
-%% TO DO
-%Add dependencies: fieldtrip and spm
-%addpath(eeglab)
-
+%% Dependencies
+addpath('/home/common/matlab/spm12')
+addpath('/home/common/matlab/fieldtrip')
+addpath('/home/common/matlab/fieldtrip/qsub')
+ft_defaults
+addpath(genpath('/project/3022026.01/scripts/Physio/eeglab14_0_0b'))
+addpath(genpath('/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings'))
 %% Settings
-cluster_outputdir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/Clusteroutput'; %directory where job info and output is stored
-processing_dir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task';
-
-subTable = getSubjects('PD_on_study');
-subjects = cellstr(subTable.SubjectNumber);
-%subject = subjects {1}
 
 %Select what to do
-conf.todo.Farm               = false;%Do you want to run Farm
+conf.todo.Farm               = false; %Do you want to run Farm
 conf.todo.Frequency_analysis = true; %Do you want to run frequency analysis
 conf.todo.prepemg            = true; %When doing frequency analysis, do you want to prepair emg using: pf_emg_raw2regr_prepemg
 conf.todo.mkregressor        = true; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
 
 %Task Settings:
-numberofEchos     = 5;         % Number of echo's of the sequence (use 1 if there is no multiecho)
-
+cluster_outputdir = fullfile('/project/3022026.01/analyses/EMG', Task, 'clusteroutput');
+processing_dir = fullfile('/project/3022026.01/analyses/EMG', Task, 'processing');
+pDir = fullfile('/project', ProjectNr);
+if strcmp(Task,'reward')   
+    NEchoes     = 5;        % Number of echoes
+    TR          = 2.24;     % TR
+    NSlices     = 32;       % Number of slices
+    pScan = '0*cmrr_3.5iso_me5_TR2240';      % Directory containing raw .IMAs
+elseif strcmp(Task,'motor')
+    NEchoes     = 1;
+    TR          = 1;  
+    MB          = 6;
+    NSlices     = 72 / MB;   
+    pScan = '0*-MB6_fMRI_2.0iso_TR1000TE34';
+elseif strcmp(Task,'rest')
+    NEchoes     = 1;
+    TR          = 0.735;  
+    MB          = 8;
+    NSlices     = 64 / MB;     
+    pScan = '0*MB8_fMRI_fov210_2.4mm_ukbiobank';
+end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SETTINGS pf_emg_raw2regr.m & pf_emg_farm.m
+%% SETTINGS pf_emg_raw2regr.m & pf_emg_farm.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Specify all options under configuration and run the batch. The following
 % functions can be used:
@@ -42,17 +77,17 @@ numberofEchos     = 5;         % Number of echo's of the sequence (use 1 if ther
 %   conf.mkregr.reanalyze='yes'.
 
 %--------------------------------------------------------------------------
-% Directories
+%% Directories
 %--------------------------------------------------------------------------
 %REGR
-conf.dir.root      =   fullfile('M:', 'Scripts', 'Packages', 'EMG_ACC', 'EMG_ACC');  % Root directory containing EMG files
-conf.dir.ParkFunc  =   fullfile(conf.dir.root, 'Helpers', 'Park_Func');     % Directory containing Park_Func
-conf.dir.Farm      =   fullfile(conf.dir.root, 'Helpers', 'Farm');          % Directory containing Farm
-conf.dir.eeglab    =   fullfile(conf.dir.root, 'Helpers', 'eeglab14_0_0b'); % Directory containing EEGLAB
+conf.dir.root      =   fullfile('/project/3022026.01/analyses/EMG', Task);
+conf.dir.ParkFunc  =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/ParkFunC_EMG';     % Directory containing Park_Func
+conf.dir.Farm      =   '/project/3022026.01/scripts/Physio/Personalized-Parkinson-Project-Physiological-Recordings/EMG_ACC/Helpers/FARM_toolbox';          % Directory containing Farm
+conf.dir.eeglab    =   '/project/3022026.01/scripts/Physio/eeglab14_0_0b'; % Directory containing EEGLAB
 conf.dir.SPM       =   fullfile('home', 'common', 'matlab', 'spm12');       % Directory containing SPM
 conf.dir.Fieldtrip =   fullfile('home', 'common', 'matlab', 'fieldtrip');   % Directory containing Fieldtrip
-conf.dir.preproc   =   fullfile(conf.dir.root, 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
-conf.dir.prepemg   =   fullfile(conf.dir.root, 'prepemg');                  % Directory where files from function "prepemg" will be stored
+conf.dir.preproc   =   fullfile(conf.dir.root, 'processing', 'FARM');                     % Directory containing files used for "prepemg" (usually after FARM)
+conf.dir.prepemg   =   fullfile(conf.dir.root, 'processing', 'prepemg');                  % Directory where files from function "prepemg" will be stored
 conf.dir.auc       =   fullfile(conf.dir.root, 'auc');                      % Directory for aucs
 conf.dir.regr      =   fullfile(conf.dir.prepemg,'Regressors');             % Directory where files from function "mkregr" will be stored
 conf.dir.event     =   conf.dir.preproc;                                    % Directory containing conditions, e.g. if you want to plot the conditions in mkregr
@@ -62,32 +97,77 @@ conf.dir.reanalyze.orig =  fullfile(conf.dir.regr,'ZSCORED'); % If in function "
 %conf.dir.fmri.preproc = {'CurSub' 'func' 'CurSess' 'CurRun' 'preproc' 'norm'};  % Directory appended to conf.dir.fmri.root containing the subject-specific fMRI scans. In this example, if the subject is p02, session is OFF and run is resting_state it will search the amount of scans in /home/action/micdir/data/DRDR_MRI/fMRI/p02/func/OFF/resting_state/preproc/norm and use this amount to match the EMG regressor datapoint
 
 %FARM
-conf.dir.save    =   fullfile('M:', 'Data', 'FARM');            % Directory for saving FARM output
-conf.dir.work    =   fullfile('M:', 'Data', 'FARM', 'work');    % Directory for temporary FARM files
+conf.dir.save    =   fullfile(conf.dir.root, 'processing', 'FARM');
+conf.dir.work    =   fullfile(conf.dir.root, 'processing', 'FARM', 'work');
 conf.dir.preworkdel  = 'yes';           % Delete work directory beforehand (if present)
 conf.dir.postworkdel = 'yes';           % Delete work directory afterwards
 
 %--------------------------------------------------------------------------
-% Subjects
+%% Subjects (Very specific to PIT and POM!)
 %--------------------------------------------------------------------------
-conf.sub.name   = {subject};
+%Retrieve subjects
+pBIDSDir = char(fullfile(pDir, 'bids'));
+Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)'; %Get list of subject who have done the chosen task. This will take a while (we're talking several minutes)...
+
+%Exclude subjects without vmrk file             <<< ToDo: Better check?
+Sel = true(numel(Sub),1);
+for n = 1:numel(Sub)
+    if ~spm_select('List', fullfile(conf.dir.root), strcat('^sub.*', Task, '.*\.vmrk$'))
+        Sel(n) = false;
+        fprintf('Skipping sub-%s with no .vmrk file', Sub{n})
+    end
+end
+%Exclude healthy controls from PIT (no emg or acc)
+if strcmp(ProjectNr, '3024006.01')
+  for n = 1:numel(Sub)
+    TaskJsonFile = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', Sub{n}], 'beh'),['^sub.*', Task, '.*_events\.json$']);
+    Json = fileread(TaskJsonFile);
+%     DecodedJson = jsondecode(Json);
+%     if strcmp(DecodedJson.Group.Value, 'HC_PIT')
+    if contains(Json(1:60), 'HC_PIT')  
+        Sel(n) = false;
+        fprintf('Skipping sub-%s, healthy control\n', Sub{n})
+    end
+  end
+end
+
+Sub = Sub(Sel);
+% Sub = {Sub{1} Sub{2} Sub{3} Sub{4}};    % Subset for testing purposes only
+% Sub = {Sub{2}};
+FARMjobs = cell(numel(Sub),1);
+FREQjobs = cell(numel(Sub),1);
 conf.sub.sess   = {'_';};             % Specify the session in a cell structure (even if you have only one session)
-conf.sub.run    = {'task1';};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
-conf.sub.name   = conf.sub.name(1);    % Select the subjects
+conf.sub.run    = {Task;};         % Specify the run in a cell structure (even if you have only one run, e.g. resting state)
+for n = 1:numel(Sub)
+conf.sub.name   = {Sub{n}};
+Channels = spm_select('FPList', fullfile('/project', ProjectNr, 'bids', ['sub-', conf.sub.name{1}], 'emg'), ['^sub.*' Task '.*channels.tsv$']);
+txtChannels = tdfread(Channels);
+nChannels = length(txtChannels.name);
+  if nChannels == 9
+      emgChannels = 1:4;
+      accChannels = 7:9;
+  elseif nChannels == 10
+      emgChannels = 1:5;
+      accChannels = 8:10;
+  else
+      fprintf('sub-%s has abnormal amount of channels: %i, skipping...\n', conf.sub.name{1}, nChannels)
+      continue
+  end
 
 %--------------------------------------------------------------------------
-% Frequency Analysis ('prepemg')
+%% Frequency Analysis ('prepemg')
 %--------------------------------------------------------------------------
 conf.prepemg.datfile  = '/CurSub/&/CurSess/&/CurRun/&/FARM.dat/';   % Data file name of preprocessed data (uses pf_findfile)
 conf.prepemg.mrkfile  = '/CurSub/&/CurSess/&/CurRun/&/FARM.vmrk/';  % Marker file name of preprocessed data (uses pf_findfile)
 conf.prepemg.hdrfile  = '/CurSub/&/CurSess/&/CurRun/&/FARM.vhdr/';  % Hdr file name of preprocessed data (uses pf_findfile)
 conf.prepemg.precut   = 'no';     % If yes, it will cut out the data before the first volume marker. If you leave this as no, it should already be cut away
 conf.prepemg.sval     = 'V';      % Scan value in your marker file (usually 'V' after FARM);
-conf.prepemg.tr       = 2.24;    % Choose a fixed TR (repetition time) or enter 'detect' if you want the script to detect this
+conf.prepemg.tr       = TR;    % Choose a fixed TR (repetition time) or enter 'detect' if you want the script to detect this
 conf.prepemg.dumscan  = 5;        % Dummyscans (Start of regressor will be at conf.prepemg.dumscan+1)
 conf.prepemg.prestart = 3;        % Scans before the start of your first scan (conf.prepemg.dumscan+1) you want to select (for example to account for the hanning taper, BOLD response etc). This data will be processed all the way, and only disregarded at the end of all analyses
 conf.prepemg.timedat  = 0.001;   % The resolution of the time-frequency representation in seconds (can be used for cfg.cfg_freq.toi)
-conf.prepemg.chan     = {'right_extensor';  %1
+if nChannels == 9
+   conf.prepemg.chan     = {'right_extensor';  %1
     'right_flexor';    %2
     'left_extensor';   %3
     'left_flexor';     %4
@@ -97,19 +177,32 @@ conf.prepemg.chan     = {'right_extensor';  %1
     'acc_y';           %12 (8)
     'acc_z' ;          %13 (9)
     }; % All channels present in your dataset, give them a name here.
+elseif nChannels == 10
+   conf.prepemg.chan     = {'right_extensor';  %1
+    'right_flexor';    %2
+    'left_extensor';   %3
+    'left_flexor';     %4
+    'most_affected_leg'; %5     <<< May be unused, despite existence of channel in eeg file!
+    'hr';              %9 (6)
+    'resp';            %10 (7)
+    'acc_x';           %11 (8)
+    'acc_y';           %12 (9)
+    'acc_z' ;          %13 (10)
+    }; % All channels present in your dataset, give them a name here. 
+end
 
 %--------------------------------------------------------------------------
-% Frequency Analysis OPTIONAL
+%% Frequency Analysis OPTIONAL
 %--------------------------------------------------------------------------
 % --- Plotting options --- %
 conf.prepemg.subplot.idx           = [1,2];    % Every analysis yields one figure, choose the subplot here ([r,c])
-conf.prepemg.subplot.chan          = { conf.prepemg.chan(1:4);
-    [conf.prepemg.chan(7:9);'acc-pc1'];
+conf.prepemg.subplot.chan          = { conf.prepemg.chan(emgChannels);
+    [conf.prepemg.chan(accChannels);'acc-pc1'];
     };        % Choose here the channels you want to plot in the subplots (these need to match the amount of subplots in conf.prepemg.subplot.idx). NB1: it will first check for a single string, you can specify these strings; 'coh': will plot the freshly performed coherence analysis
 
 % --- Optional: combine channels if desired --- %
 conf.prepemg.combichan.on   = 'yes';                                % If you want to combine channels, specify 'yes'
-conf.prepemg.combichan.chan = {conf.prepemg.chan(7:9) 'acc-pc1';};  % Choose the sets of channels you want to combine (for every row another set of channels, in the left column the channel names (as in conf.prepemg.chan) in the right column the new name)
+conf.prepemg.combichan.chan = {conf.prepemg.chan(accChannels) 'acc-pc1';};  % Choose the sets of channels you want to combine (for every row another set of channels, in the left column the channel names (as in conf.prepemg.chan) in the right column the new name)
 conf.prepemg.combichan.meth = 'pca';                                % Choose method of combining ('vector': will make a vector out of a triaxial signal (x^2+y^2+z^2)^0.5 | 'pca': performs principal component analysis and will take first principle component)
 
 % --- Optional: perform coherence analysis if desired --- %
@@ -123,7 +216,7 @@ conf.prepemg.freqana.avg        = 'no';
 
 % --- Optional: calculate area under the curve for the highest peak in the ACC spectrum (FWHM) --- %
 conf.auc.auto                   = 'yes';
-conf.auc.chan                   = {5:7}; %JS edit. Defines accelerometry channels for the analysis AUC dataset (HR and RESP are removed at this point).
+conf.auc.chan                   = {accChannels - 2}; %JS edit. Defines accelerometry channels for the analysis AUC dataset (HR and RESP are removed at this point).
 conf.auc.filter                 = [3.4 6.6]; %filter (two numbers required!) for peak selection. Most tremor peaks fall between 3.4 and 6.6 Hz, so recommended to leave as is.
 conf.auc.us_factor              = 20; %upsample factor for power spectrum for AUC. Recommended: 20.
 conf.auc.manual                 = 'no'; %selects peak within manual range and channel only (specify below)
@@ -134,7 +227,7 @@ conf.auc.manual_range           = 5 ; %Can give range (two numbers) or one value
 % In case of one value, the algorithm selects the closest peak.
 
 %--------------------------------------------------------------------------
-% Make Regressor ('mkregressor')
+%% Make Regressor ('mkregressor')
 %--------------------------------------------------------------------------
 conf.mkregr.reanalyze = 'no';   % Choose if you want to reanalyze previously selected data. If not, then use the GUI: pf_emg_raw2regr_mkregressor_gui
 conf.mkregr.reanalyzemeth = {  'regressor';
@@ -142,7 +235,7 @@ conf.mkregr.reanalyzemeth = {  'regressor';
     }; % Method for re-analyzing the data ('regressor': create regressors; 'ps_save': only save average power spectrum)
 conf.mkregr.automatic = 'yes';
 conf.mkregr.automaticfreqwin = [2.99,8.1];
-conf.mkregr.automaticdir = '/project/3022026.01/analyses/tessa/Test/EMG_ACCprocessing/Task/prepemg/Regressors/Check_automaticselection';
+conf.mkregr.automaticdir = fullfile(conf.dir.root, 'automaticdir');
 conf.mkregr.file      = '/CurSub/&/CurSess/&/freqana/'; % Name of prepemg data (uses pf_findfile)
 conf.mkregr.scanname  = '|w*';                          % search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile)
 conf.mkregr.sample    = 1;                              % Samplenr of every scan which will be used to represent the tremor during scan (if you used slice time correction, use the reference slice timing here)
@@ -153,10 +246,10 @@ conf.mkregr.save      = 'yes';                          % Save regressors/figure
 
 %Choose channels based on acc vs emg and most affected side. THIS IS VERY
 %SPEFIC TO DONDERS AND OUR STUDY
-if todo.ACC
-    conf.mkregr.automaticchans = 5:7;
+if conf.todo.ACC
+    conf.mkregr.automaticchans = accChannels - 2;
 else
-    AffectedSide = Most_affected_hand(subject);
+    AffectedSide = Most_affected_hand(conf.sub.name);
     if strcmp(AffectedSide, 'Left')
         conf.mkregr.automaticchans = 3:4;
     elseif strcmp(AffectedSide,'Right')
@@ -165,11 +258,12 @@ else
 end
 
 %Check number of scans
-nScan = dir(fullfile("project","3022026.01","raw", strcat("sub-", cSub), "ses-mri01","*cmrr_3.5iso_me5_TR2240", "*.IMA"));
-conf.mkregr.nscan = (size(nScan,1)/numberofEchos) - conf.prepemg.dumscan;
+dScan = dir(fullfile(pDir,'raw', strcat('sub-', char(conf.sub.name)), 'ses-mri01', pScan));     % Directory containing raw .IMAs
+nScan = dir(fullfile(pDir,'raw', strcat('sub-', char(conf.sub.name)), 'ses-mri01', dScan.name, '*.IMA'));
+conf.mkregr.nscan = (size(nScan,1)/NEchoes) - conf.prepemg.dumscan;
 
 %--------------------------------------------------------------------------
-% Make Regressor OPTIONAL
+%% Make Regressor OPTIONAL
 %--------------------------------------------------------------------------
 % --- Optional: plot condition as grey bar --- %
 conf.mkregr.plotcond  = 'no';                                   % If you want to plot the condition (will use the same )
@@ -182,16 +276,16 @@ conf.mkregr.mrk.offset= 'S 12';                                  % Offset marker
 conf.mkregr.plotscanlines = 'no';                       % If yes then it will plot the scanlines in the original resolution.
 
 %--------------------------------------------------------------------------
-%  FieldTrip Configuration
+%%  FieldTrip Configuration
 %--------------------------------------------------------------------------
 % Options specified here correspond to the options specified for FieldTrip
 % fucntions. Therefore, check the info of FieldTrip for options possible:
 % ft_preprocessing for cfg_pre, ft_freqanalysis for cfg_freq
 % --- Preprocessing (ft_preprocessing) --- %
 cfg.chandef =   {
-    1:4;   % First round of preprocessingfor channel 1:4 (in my case EMG after FARM)
-    1:4;   % Second round of preprocessing for channel 1:4 (in my case EMG after FARM)
-    7:9; % First round of preprocessing for channel 7:9 (in my case raw accelerometry)
+    emgChannels;   % First round of preprocessingfor channel 1:4 (in my case EMG after FARM)
+    emgChannels;   % Second round of preprocessing for channel 1:4 (in my case EMG after FARM)
+    accChannels; % First round of preprocessing for channel 7:9 (in my case raw accelerometry)
     };       % Define the different preprocessing for the channels here. For every row define the channels defined in conf.prepemg.chan and define the preprocessing in the options below. The different processed channels will be appended later on.
 
 cfg.cfg_pre{1}             =   [];       % For every set of channels (nRows in cfg.chandef) you must here define the preprocessing methods. E.g. in this case cfg.cfg_pre{1} corresponds to channels 1:8 (first round), cfg.cfg_pre{3} to channels 11:13
@@ -239,22 +333,22 @@ cfg.cfg_coh.foi       = 2:0.5:13;          % Frequency range (usually same as cf
 cfg.cfg_coh.tapsmofrq = 0.5;
 
 %--------------------------------------------------------------------------
-%  File info 
+%%  File info 
 %--------------------------------------------------------------------------
 conf.file.name          =   '/CurSub/&/CurSess/&/CurRun/&/.vhdr/';         %%%%%%%%%%%%%%%%%%%%%%%%%%%% .vhdr file of the BVA EMG file(uses pf_findfile)
-conf.file.nchan         =   9;                                             % total amount of channels in original file
-conf.file.chan          =   1:4;                                           % Channels you want to analyze. EMG
-conf.file.scanpar       =   [2.24;32;nan];                                 % Scan parameters: TR / nSlices / nScans (enter nan for nScans if you want to automatically detect this)
+conf.file.nchan         =   nChannels;                                             % total amount of channels in original file
+conf.file.chan          =   emgChannels;                                           % Channels you want to analyze. EMG
+conf.file.scanpar       =   [TR;NSlices;nan];                                 % Scan parameters: TR / nSlices / nScans (enter nan for nScans if you want to automatically detect this)
 conf.file.etype         =   'R  1';                                        % Scan marker (EEG.event.type)
 
 %--------------------------------------------------------------------------
-%  Preprocessing and slice triggers
+%%  Preprocessing and slice triggers
 %--------------------------------------------------------------------------
 conf.preproc.mkbipol    =   'no';       % If yes, then it will make bipolar out of monopolar channels
 conf.slt.plot           =   'no';       % Plot the slicetrigger check (no for qsub)
 
 %--------------------------------------------------------------------------
-%  Additional methods
+%%  Additional methods
 %--------------------------------------------------------------------------
 conf.meth.volcor  =   'yes';   % volume correction
 conf.meth.cluster =   'yes';   % Cluster correction
@@ -267,18 +361,15 @@ conf.meth.anc     =   'yes';   % do ANC
 %% Call functions
 startdir = pwd;
 cd(cluster_outputdir)
-FARMjobs = {}; FREQjobs = {};
-
-for sb=1:length(subjects)
-    if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' subjects{sb} '/&/task1/'])) && todo.Farm
-        fprintf(['\n --- Submitting FARM-job for subject ' subjects{sb} ' ---\n']);
-        FARMjobs{sb} = qsubfeval('pf_emg_farm_Task',subjects{sb}, conf,'memreq',10^10,'timreq',12*3600);  % Run on cluster ;
-    elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' subjects{sb} '/&/task1/'])) && todo.Frequency_analysis
-        fprintf(['\n --- Submitting frequency analysis-job for subject ' subjects{sb} ' ---\n']);
-        FREQjobs{sb} = qsubfeval('pf_emg_raw2regr_Task',subjects{sb}, conf, 'memreq',10^10,'timreq',12*3600);  % Run on cluster
-    else
-        fprintf(['\n --- FARM and frequency analysis already done for ' subjects{sb} ' or not selected as task ---\n']);
-    end
+if isempty(pf_findfile(fullfile(processing_dir,'FARM'),['/' conf.sub.name{1} '/&/' Task '/'])) && conf.todo.Farm
+    fprintf(['\n --- Submitting FARM-job for subject ' conf.sub.name{1} ' ---\n']);
+    FARMjobs{n} = qsubfeval('pf_emg_farm', conf.sub.name, conf,'memreq', 4*1024^3,'timreq',1*60*60);  % Run on cluster ;
+elseif isempty(pf_findfile(fullfile(processing_dir,'prepemg'),['/' conf.sub.name{1} '/&/' Task '/'])) && conf.todo.Frequency_analysis
+    fprintf(['\n --- Submitting frequency analysis-job for subject ' conf.sub.name{1} ' ---\n']);
+    FREQjobs{n} = qsubfeval('pf_emg_raw2regr', conf, cfg, 'memreq',8*1024^3,'timreq',1*60*60);  % Run on cluster
+else
+    fprintf(['\n --- FARM and frequency analysis already done for ' conf.sub.name{1} ' or not selected as task ---\n']);
+end
 end
 
 jobs = [FARMjobs FREQjobs];
@@ -294,6 +385,8 @@ end
 
 fprintf(['\n --- Done ---\n']);
 
+cd(startdir)
+
 %% Final step: select peak frequency and channel, create regressor
 % Use pf_emg_raw2regr_mkregressor_gui in matlab2014a with paths:
 % scriptdir = '/project/3011164.01/TEMP/Scripts/EMG-ACC/';
@@ -302,3 +395,4 @@ fprintf(['\n --- Done ---\n']);
 % addpath('/home/common/matlab/spm12');
 % spm fmri
 
+end
