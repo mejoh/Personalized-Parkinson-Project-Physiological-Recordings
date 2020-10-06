@@ -6,7 +6,7 @@
 % cConversionTable.mgRelfecting100mgL_dopa = str2double(cConversionTable.mgRelfecting100mgL_dopa);
 % cConversionTable.ConversionFactor_LEDD = str2double(cConversionTable.ConversionFactor_LEDD);
 
-function [medUser, LEDD, rawData, medicationTable] = ScoreMedication(cFile, cConversionTable)
+function MEDout = ScoreMedication(cFile, cConversionTable)
 cSubText = textscan(fopen(cFile), '%s');
 cSubJson = jsondecode(string(cSubText));
 
@@ -16,10 +16,10 @@ if strcmp(cSubJson.crf.ParkinMedUser, '1')
     %If report is still empty, give warning and skip subject
     if isempty(cSubJson.reports)
         warning(strcat("Empty report but is marked as med user for sub: ", cFile));
-        medUser = false;
-        LEDD = 0;
-        rawData = cSubText;
-        medicationTable = missing;
+        MEDout.medUser = false;
+        MEDout.LEDD = 0;
+        MEDout.rawData = cSubText;
+        MEDout.medicationTable = missing;
         return
     end
     
@@ -31,18 +31,19 @@ if strcmp(cSubJson.crf.ParkinMedUser, '1')
     removeMed = isnan(cMeds);
     cMeds = cMeds(~removeMed);
     cMedsTimesPerDay = cMedsTimesPerDay(~removeMed);
-%     if sum(removeMed)>0; warning(strcat("Removed medication without name for: ", cFile)); end
+    if sum(removeMed)>0; warning(strcat("Removed medication without name for: ", cFile)); end
     
     %Loop through each medication to get a good overview
-    medication=table('size', [0 9], ...
-        'VariableTypes', ["double", "string", "double", "double", "string", "double", "double", "double", "double"], ...
-        'VariableNames', ["Medication_Number", "Medication_Name", "Number_of_components", "Component_Number", "Component_Name", "Total_Doses", "Dose", "Amount", "LED"]);
+    medication=table('size', [0 10], ...
+        'VariableTypes', ["double", "string", "string", "double", "double", "string", "double", "double", "double", "double"], ...
+        'VariableNames', ["Medication_Number", "Medication_Name", "Medication_Class", "Number_of_components", "Component_Number", "Component_Name", "Total_Doses", "Dose", "Amount", "LED"]);
     for cMedCounter = 1:size(cMeds,2)
         %Find data for the medication
         cMedNumber = cMeds(cMedCounter);
         cMedName = string(cConversionTable.Medication_Name(cMedNumber));
         cMedComponents = cConversionTable.Components(cMedNumber);
         cMedTimesPerDay = cMedsTimesPerDay(cMedCounter);
+        cMedClass = cConversionTable.Classification(cMedNumber);
         
         %Find all doses (CHANGE TO TABLE)
         cRowCounter = 0;
@@ -72,6 +73,7 @@ if strcmp(cSubJson.crf.ParkinMedUser, '1')
                 %Save to struct and convert to table
                 cDose.Medication_Number = cMedNumber;
                 cDose.Medication_Name = cMedName;
+                cDose.Medication_Class = cMedClass;
                 cDose.Number_of_components = cMedComponents;
                 cDose.Component_Number = cComponent;
                 cDose.Component_Name = cComponent_Name;
@@ -97,4 +99,9 @@ else %No medication
     rawData = cSubText;
     medicationTable = missing;
 end
+
+MEDout.medUser = medUser; 
+MEDout.LEDD = LEDD; 
+MEDout.rawData = rawData; 
+MEDout.medicationTable = medicationTable; 
 end
