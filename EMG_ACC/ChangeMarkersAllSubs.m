@@ -1,4 +1,4 @@
-function ChangeMarkersAllSubs(Task, ProjectNr)
+function ChangeMarkersAllSubs(Task, ProjectNr, Subset)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
 % ProjectNr = '3022026.01';       % From which subjects do you want to process subjects
 
@@ -59,6 +59,20 @@ for n = 1:numel(Sub)
         fprintf('Skipping %s without fmri or without beh data for task \n', Sub{n})
     end
 end
+%Exclude subjects that have already been processed
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    for i = 1:numel(cSessions)
+        eeg = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.eeg']);
+        vmrk = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.vmrk']);
+        vhdr = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.vhdr']);
+        if ~isempty(eeg) || ~isempty(vmrk) || ~isempty(vhdr)
+            Sel(n) = false;
+            fprintf('Skipping %s with already processed data \n', Sub{n})
+        end
+    end
+end
+
 Sub = Sub(Sel);
 
 % Generate an input table for the ChangeMarkersEMG function
@@ -82,7 +96,7 @@ end
 %Check whether a .vmrk is present and select the last run
 % DEPRECATED inputTable = rowfun(@(cSub) getFiles2(pDir, Task, cSub, Session), cell2table(Sub), 'NumOutputs', 2, 'OutputVariableNames', {'Subject', 'oldFile'});
 inputTable = inputTable(~ismissing(inputTable.oldFile),:); %remove subjects without folder
-inputTable = inputTable(1:20,:);            % Subset for testing
+inputTable = inputTable(1:Subset,:);            % Subset for testing
 settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
 
 %Check markers
