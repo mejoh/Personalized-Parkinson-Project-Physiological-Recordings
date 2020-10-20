@@ -1,4 +1,4 @@
-function ChangeMarkersAllSubs(Task, ProjectNr, Subset)
+function ChangeMarkersAllSubs(Task, ProjectNr, Subset, Force)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
 % ProjectNr = '3022026.01';       % From which subjects do you want to process subjects
 
@@ -6,6 +6,10 @@ function ChangeMarkersAllSubs(Task, ProjectNr, Subset)
 %Improve descriptions
 %Improve error handling
 %Task = rest errors after a few subjects
+
+if isempty(Force) || ~istrue(Force)
+    Force = false;
+end
 
 %% OS CHECK
 if ispc
@@ -59,18 +63,34 @@ for n = 1:numel(Sub)
         fprintf('Skipping %s without fmri or without beh data for task \n', Sub{n})
     end
 end
-%Exclude subjects that have already been processed
+% Exclude subejcts that do not have eeg data
 for n = 1:numel(Sub)
     cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
     for i = 1:numel(cSessions)
-        eeg = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.eeg']);
-        vmrk = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.vmrk']);
-        vhdr = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*_eeg.vhdr']);
-        if ~isempty(eeg) || ~isempty(vmrk) || ~isempty(vhdr)
+        eeg = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.eeg']);
+        vmrk = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vmrk']);
+        vhdr = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vhdr']);
+        if isempty(eeg) || isempty(vmrk) || isempty(vhdr)
+            Sel(n) = false;
+            fprintf('Skipping %s without task-related eeg data \n', Sub{n})
+        end
+    end
+end
+
+%Exclude subjects that have already been processed
+if ~istrue(Force)
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    for i = 1:numel(cSessions)
+        eeg = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.eeg']);
+        vmrk = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vmrk']);
+        vhdr = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vhdr']);
+        if ~isempty(eeg) && ~isempty(vmrk) && ~isempty(vhdr)
             Sel(n) = false;
             fprintf('Skipping %s with already processed data \n', Sub{n})
         end
     end
+end
 end
 
 Sub = Sub(Sel);
@@ -95,6 +115,13 @@ end
 
 %Check whether a .vmrk is present and select the last run
 % DEPRECATED inputTable = rowfun(@(cSub) getFiles2(pDir, Task, cSub, Session), cell2table(Sub), 'NumOutputs', 2, 'OutputVariableNames', {'Subject', 'oldFile'});
+if isempty(Subset)
+    Subset = height(inputTable);
+    fprintf('Processing all %i remaining participants \n', Subset)
+elseif ~isempty(Subset) && Subset > height(inputTable)
+    Subset = height(inputTable);
+    fprintf('Subset is greater than total number of participants. Processing all %i participants instead \n', Subset)
+end
 inputTable = inputTable(~ismissing(inputTable.oldFile),:); %remove subjects without folder
 inputTable = inputTable(1:Subset,:);            % Subset for testing
 settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
