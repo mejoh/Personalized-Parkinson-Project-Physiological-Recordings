@@ -122,14 +122,14 @@ for n = 1:numel(Sub)
     end
 end
 
-%Exclude subjects without motor task and without vmrk/eeg/vhdr file
+%Exclude subjects without without vmrk/eeg/vhdr file
 for n = 1:numel(Sub)
     vmrk    = cellstr(spm_select('List', conf.dir.root, [Sub{n}, '.*task-', Task, '.*_eeg.vmrk$']));
     eeg     = cellstr(spm_select('List', conf.dir.root, [Sub{n}, '.*task-', Task, '.*_eeg.eeg$']));
     vhdr    = cellstr(spm_select('List', conf.dir.root, [Sub{n}, '.*task-', Task, '.*_eeg.vhdr$']));
     if isempty(vmrk{1}) || isempty(eeg{1}) || isempty(vhdr{1})
         Sel(n) = false;
-        fprintf('Skipping sub-%s with no .vmrk or .eeg files \n', Sub{n})
+        fprintf('Skipping sub-%s with no vmrk/eeg/vhdr files \n', Sub{n})
     end
 end
 
