@@ -222,7 +222,7 @@ Sessions = cellstr(spm_select('FPList', fullfile(pBIDSDir, conf.sub.name), 'dir'
     conf.prepemg.freqana.avg        = 'no';
 
 % --- Optional: calculate area under the curve for the highest peak in the ACC spectrum (FWHM) --- %
-    conf.auc.auto                   = 'yes';
+    conf.auc.auto                   = 'no';
     conf.auc.chan                   = {accChannels - 2}; %JS edit. Defines accelerometry channels for the analysis AUC dataset (HR and RESP are removed at this point).
     conf.auc.filter                 = [3.4 6.6]; %filter (two numbers required!) for peak selection. Most tremor peaks fall between 3.4 and 6.6 Hz, so recommended to leave as is.
     conf.auc.us_factor              = 20; %upsample factor for power spectrum for AUC. Recommended: 20.
@@ -241,7 +241,7 @@ Sessions = cellstr(spm_select('FPList', fullfile(pBIDSDir, conf.sub.name), 'dir'
     %                              'ps_save';
         }; % Method for re-analyzing the data ('regressor': create regressors; 'ps_save': only save average power spectrum)
     conf.mkregr.automatic = 'yes';
-    conf.mkregr.automaticfreqwin = [2.99,8.1];
+    conf.mkregr.automaticfreqwin = [1.99,13.1];
     conf.mkregr.automaticdir = fullfile(conf.dir.root, 'automaticdir');
     conf.mkregr.file      = '/CurSub/&/CurSess/&/freqana/'; % Name of prepemg data (uses pf_findfile)
     conf.mkregr.scanname  = '|w*';                          % search criterium for images (only if conf.mkregr.nscan = 'detect'; uses pf_findfile)
