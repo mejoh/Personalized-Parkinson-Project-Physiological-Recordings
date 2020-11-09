@@ -1,11 +1,15 @@
-function ChangeMarkersAllSubs(Task, ProjectNr)
+function ChangeMarkersAllSubs(Task, ProjectNr, Subset, Force)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
-% ProjectNr = '3024006.01' / '3022026.01';       % From which subjects do you want to process subjects
+% ProjectNr = '3022026.01';       % From which subjects do you want to process subjects
 
 %% ToDo
 %Improve descriptions
 %Improve error handling
 %Task = rest errors after a few subjects
+
+if isempty(Force) || ~istrue(Force)
+    Force = false;
+end
 
 %% OS CHECK
 if ispc
@@ -22,24 +26,21 @@ end
 %Options: 
 
 %Standard settings: 
-settings.RawFolder  = fullfile(pfProject, ProjectNr, 'raw');   %We count the number of images in the raw folder
+
 
 %Settings specific to task
 if strcmp(Task, "motor")
     settings.TR         = 1;                                                                %double with TR time in seconds
-    settings.ScanFolder = fullfile("ses-mri01", "0*MB6_fMRI_2.0iso_TR1000TE34", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+    settings.Scan = '^sub-.*task-motor_acq-MB6.*nii.gz$';        %Regular expression used to search for relevant image
     settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "motor");                 %Output folder for the new files
-    settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "reward")
     settings.TR         = 2.24;                                                                %double with TR time in seconds
-    settings.ScanFolder = fullfile("ses-mri01", "0*cmrr_3.5iso_me5_TR2240", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+    settings.Scan = '^sub-.*task-reward_acq-ME.*nii.gz$';      %Regular expression used to search for relevant image
     settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "reward");                 %Output folder for the new files
-    settings.NumberOfEchos = 5;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 elseif strcmp(Task, "rest")
     settings.TR         = 0.735;                                                                %double with TR time in seconds
-    settings.ScanFolder = fullfile("ses-mri01", "0*MB8_fMRI_fov210_2.4mm_ukbiobank", "*.IMA");        %To search the raw images, we need a path within a subject folder to the raw images of the currect scan. Note the * at the scanname (instead of numbers) and the file extension (all IMA files).
+    settings.Scan = '^sub-.*task-rest_acq-MB8.*nii.gz$';      %Regular expression used to search for relevant image
     settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "rest");                 %Output folder for the new files
-    settings.NumberOfEchos = 1;                                                      % Number of Echos if you do not have a multi echo sequence, use 1.
 end
 
 %% Execution
@@ -48,19 +49,96 @@ fprintf("Processing physiological data from %s task in project %s\n", Task, Proj
 %Retrieve subjects
 addpath('/home/common/matlab/spm12')
 pDir = fullfile(pfProject, ProjectNr);
-pBIDSDir = char(fullfile(pDir, "bids"));
-Sub = spm_BIDS(pBIDSDir, 'subjects', 'task', Task)'; %Get list of subject who have done the chosen task. This will take a while (we're talking several minutes)...
+pBIDSDir = char(fullfile(pDir, 'pep', 'bids'));
+Sub = cellstr(spm_select('List', fullfile(pBIDSDir), 'dir', '^sub-POM.*'));
+Sel = true(numel(Sub),1);
+
+%Exclude subjects without fmri/task data
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('FPList', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    TaskData_fmri = cellstr(spm_select('List', fullfile(cSessions, 'func'), ['.*task-', Task, '.*.nii.gz']));
+    TaskData_beh  = cellstr(spm_select('List', fullfile(cSessions, 'beh'), ['.*task-', Task, '.*.tsv']));
+    if isempty(TaskData_fmri{1}) || isempty(TaskData_beh{1})
+        Sel(n) = false;
+        fprintf('Skipping %s without fmri or without beh data for task \n', Sub{n})
+    end
+end
+% Exclude subejcts that do not have eeg data
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    for i = 1:numel(cSessions)
+        eeg = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.eeg']);
+        vmrk = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vmrk']);
+        vhdr = spm_select('List', fullfile(pBIDSDir, Sub{n}, cSessions{i}, 'eeg'), [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vhdr']);
+        if isempty(eeg) || isempty(vmrk) || isempty(vhdr)
+            Sel(n) = false;
+            fprintf('Skipping %s without task-related eeg data \n', Sub{n})
+        end
+    end
+end
+
+%Exclude subjects that have already been processed
+if ~istrue(Force)
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    for i = 1:numel(cSessions)
+        eeg = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.eeg']);
+        vmrk = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vmrk']);
+        vhdr = spm_select('List', settings.NewFolder, [Sub{n}, '_', cSessions{i}, '.*', Task, '.*_eeg.vhdr']);
+        if ~isempty(eeg) && ~isempty(vmrk) && ~isempty(vhdr)
+            Sel(n) = false;
+            fprintf('Skipping %s with already processed data \n', Sub{n})
+        end
+    end
+end
+end
+
+Sub = Sub(Sel);
+
+% Generate an input table for the ChangeMarkersEMG function
+inputTable = cell2table(cell(0,2), 'VariableNames', {'Subject', 'oldFile'});
+for n = 1:numel(Sub)
+    cSessions = cellstr(spm_select('FPList', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
+    cSessions = strcat(cSessions, filesep, 'eeg');
+    sVmrk = "";
+    for ses = 1:size(cSessions,1)
+        dVmrk = dir(fullfile(cSessions{ses}, [Sub{n}, '*', Task, '*.vmrk']));
+        if isempty(dVmrk)
+            sVmrk(ses,1) = "";
+        else
+            sVmrk(ses,1) = string(join([dVmrk(end).folder, filesep, dVmrk(end).name]));
+        end
+    end
+    SubjectID = string(repmat(Sub{n}, numel(sVmrk), 1));
+    inputTable = [inputTable; table(SubjectID, 'VariableNames', {'Subject'}), table(sVmrk, 'VariableNames', {'oldFile'})];
+end
 
 %Check whether a .vmrk is present and select the last run
-inputTable = rowfun(@(cSub) getFiles(pDir, Task, ProjectNr, cSub), cell2table(Sub), 'NumOutputs', 2, 'OutputVariableNames', {'Subject', 'oldFile'});
+% DEPRECATED inputTable = rowfun(@(cSub) getFiles2(pDir, Task, cSub, Session), cell2table(Sub), 'NumOutputs', 2, 'OutputVariableNames', {'Subject', 'oldFile'});
+if isempty(Subset)
+    Subset = height(inputTable);
+    fprintf('Processing all %i remaining participants \n', Subset)
+elseif ~isempty(Subset) && Subset > height(inputTable)
+    Subset = height(inputTable);
+    fprintf('Subset is greater than total number of participants. Processing all %i participants instead \n', Subset)
+end
 inputTable = inputTable(~ismissing(inputTable.oldFile),:); %remove subjects without folder
-% inputTable = inputTable(8:11,:);            % Subset for testing
+inputTable = inputTable(1:Subset,:);            % Subset for testing
 settings.EEGfolder  = table2array(rowfun(@fileparts, inputTable(:,2)));
 
 %Check markers
-logFile.LogTable = rowfun(@(cSub, oldFile) ChangeMarkersEMG(cSub, oldFile, settings), inputTable, ...
+logFile.LogTable = rowfun(@(Subject, oldFile) ChangeMarkersEMG(Subject, oldFile, settings), inputTable, ...
     'NumOutputs', 3, ...
     'OutputVariableNames', ["Subject", "File", "Error"]);
+
+%Remove duplicated 'response' events in .vmrk files
+for n=1:size(inputTable,1)
+    cSub = char(table2array(inputTable(n,1)));
+    VMRKfiles = cellstr(spm_select('FPList', fullfile(settings.NewFolder), [cSub '.*task-', Task, '*._eeg.vmrk'])); % Locates multiple visits if available
+    for i=1:numel(VMRKfiles)
+        ChangeDoubleResponse(VMRKfiles{i});
+    end
+end
 
 %Log
 logFile.settings = settings;
@@ -94,7 +172,11 @@ cData = readtable(oldFile, ...
     'ReadVariableNames', false, ...
     'Delimiter', {'=', ','}, ...
     'HeaderLines', 11);
-cData.Properties.VariableNames = {'MarkerNumber','MarkerType','Description','PositionInDatapoints','SizeInDataPoints', 'ChannelNumber', 'Unkown'};
+if(size(cData,2) == 6)
+    cData.Properties.VariableNames = {'MarkerNumber','MarkerType','Description','PositionInDatapoints','SizeInDataPoints', 'ChannelNumber'};
+elseif(size(cData,2) == 7)
+    cData.Properties.VariableNames = {'MarkerNumber','MarkerType','Description','PositionInDatapoints','SizeInDataPoints', 'ChannelNumber', 'Unknown'};
+end
 
 %Header
 cFile = fopen(oldFile);
@@ -103,7 +185,6 @@ for cLine = 1:12
     header(cLine)=string(fgetl(cFile));
 end
 fclose(cFile);
-
 
 %Checks for whether the marker file is acceptable.
 %-----------------------------------
@@ -135,17 +216,18 @@ end
 
 %Check 3) Check if there are sufficient pulses
 %Find number of pulses
-cImaFiles = size(dir(strcat(settings.RawFolder, filesep, "sub-", cSub, filesep, settings.ScanFolder)),1);
-cImaFiles = cImaFiles / settings.NumberOfEchos ;
-if (size(cData, 1) == cImaFiles+1)
+cImgDir = strrep(fileparts(oldFile), '/eeg', '/func');
+cImg = spm_select('FPList', cImgDir, settings.Scan);
+cImgSize = size(spm_vol(cImg(size(cImg,1),:)),1);
+if (size(cData, 1) == cImgSize+1)
     warning(strcat("One pulse too many for: ", oldFile));
     cError = strcat(cError, " & One pulse too many - REMOVED LAST PULSE");
     cData(end,:)=[];
-elseif (size(cData, 1) > cImaFiles)
+elseif (size(cData, 1) > cImgSize)
     warning(strcat("More then one pulse too many for: ", oldFile));
     cError = strcat(cError, " & More then one pulse too many");
     return
-elseif (size(cData, 1) < cImaFiles)
+elseif (size(cData, 1) < cImgSize)
     warning(strcat("Not enough pulses for: ", oldFile));
     cError = strcat(cError, " & Not enough pulses");
     return
@@ -175,7 +257,11 @@ end
 %Rework marker numbers & remove unnecessary columns
 cData.MarkerNumber = strcat("Mk", string(2:length(cData.MarkerNumber)+1))';
 cData.MarkerNumber = strcat(cData.MarkerNumber, "=", cData.MarkerType);
-cData=removevars(cData, {'MarkerType', 'Unkown'});
+if(size(cData,2) == 6)
+    cData=removevars(cData, {'MarkerType'});
+elseif(size(cData,2) == 7)
+    cData=removevars(cData, {'MarkerType', 'Unknown'});
+end
 
 %Set Description markers to "R  1"
 cData.Description = repmat("R  1", size(cData,1), 1);
@@ -205,12 +291,7 @@ fclose(cDataFile);
 delete(tempDataFile)
 
 %Copy .eeg and .vhdr files
-if contains(settings.EEGfolder, '3022026.01')           % Because POM and PIT organizes emg data differently, we need different settings here
-    cBase = fullfile(settings.EEGfolder(1), cFileID);
-elseif contains(settings.EEGfolder, '3024006.01')
-    idx = contains(settings.EEGfolder, extractBefore(cFileID, '_'));
-    cBase = fullfile(settings.EEGfolder(idx), cFileID);
-end
+cBase = fullfile(fileparts(oldFile), cFileID);
 cTarget = fullfile(settings.NewFolder, cFileID);
 copyfile(strcat(cBase, ".eeg"), strcat(cTarget, ".eeg")); %.eeg
 copyfile(strcat(cBase, ".vhdr"), strcat(cTarget, ".vhdr")); %.vhdr
@@ -243,6 +324,7 @@ end
 newData = cData;
 end
 
+%%%%%-------------DEPRECATED-------------%%%%%
 %This function retrieves the old Marker file for a subject
 function [cSub, cFile] = getFiles(pDir, Task, ProjectNr, cSub)
 %Check what to search for
@@ -276,4 +358,36 @@ else
     fprintf("Project number not recognized as either PIT or POM, aborting...\n")
 end
 end
+%%%%%------------------------------------%%%%%
+
+function [vmrkfile] = ChangeDoubleResponse(vmrkfile)
+    
+    if(isempty(vmrkfile))
+        return
+    end
+    
+    cData = fopen(vmrkfile);
+    header=string(fgetl(cData));
+    while 1
+        OldLine = fgetl(cData);
+        if ~ischar(OldLine), break, end         % Break when there are no more lines to read
+        if(contains(OldLine, 'Response,Response,R ') || contains(OldLine, 'R 1'))
+            newLine = strrep(OldLine, 'Response,Response,R ', 'Response,R ');
+            newLine = strrep(newLine, 'R 1', 'R  1');
+        else
+            newLine = OldLine;
+        end
+        header = [header; newLine];
+    end
+    fclose(cData);    
+    header = header';
+    
+    cHeaderFile = fopen(vmrkfile, 'w+');        % overwrite content
+    for line = 1:length(header)
+        fprintf(cHeaderFile, strcat(header(line), '\r\n'));
+    end
+    fclose(cHeaderFile); %close
+    
+end
+
 end

@@ -44,8 +44,9 @@ else
 end
 
 %%%%%%%%%%%%%%%%%%--------------------------- START USER SETTINGS
-handles.savedir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest");
-handles.filesDir = fullfile(pfProject, "3022026.01", "analyses", "tessa", "Test", "EMG_ACCprocessing", "Rest", "prepemg", "Regressors", "Check_automaticselection") ;
+Task="motor";
+handles.savedir = fullfile(pfProject, "3022026.01", "analyses", "EMG", Task, "manually_checked", "Martin");
+handles.filesDir = fullfile(pfProject, "3022026.01", "analyses", "EMG", Task, "automaticdir", "Martin") ;
 %%%%%%%%%%%%%%%%%%--------------------------- END USER SETTINGS
 
 % Choose default command line output for AccEmgChecker
@@ -53,8 +54,8 @@ handles.output = hObject;
 
 %% OS CHECK
 AllFiles = struct2table(dir(handles.filesDir));
-handles.files = AllFiles.name(3:end);
-Img = imread(handles.files {1});
+handles.files = fullfile(AllFiles.folder(3:end), AllFiles.name(3:end));
+Img = imread(handles.files{1});
 axes(handles.axes1);
 imshow(Img);
 
@@ -184,10 +185,10 @@ guidata(hObject, handles);
 Tremor_check = struct2table(handles.Tremor);
 Peak_check = struct2table(handles.Peak);
 
-writetable (Tremor_check, fullfile(handles.savedir, "Tremor_check.xlsx"), 'Sheet', 1 );
-writetable (Peak_check, fullfile(handles.savedir, "Peak_check.xlsx"), 'Sheet', 1 );
-save (fullfile(handles.savedir, "Tremor_check.mat"), 'Tremor_check');
-save (fullfile(handles.savedir, "Peak_check.mat"), 'Peak_check');
+writetable (Tremor_check, fullfile(handles.savedir, ['Tremor_check-' date '.csv']));
+writetable (Peak_check, fullfile(handles.savedir, ['Peak_check-' date '.csv']));
+save (fullfile(handles.savedir, ['Tremor_check-' date '.mat']), 'Tremor_check');
+save (fullfile(handles.savedir, ['Peak_check-' date '.mat']), 'Peak_check');
 disp 'Data is saved'
 
 % --- Executes during object creation, after setting all properties.

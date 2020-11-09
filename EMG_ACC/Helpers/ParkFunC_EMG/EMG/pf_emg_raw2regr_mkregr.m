@@ -191,7 +191,7 @@ for a = 1:nFiles
             legend(dat.label(conf.mkregr.automaticchans))
             ylabel('Power');xlabel('Frequency')
             
-            savename = [CurSub '-' CurRun '-selected-' dat.label{conf.mkregr.automaticchans(r)}];
+            savename = [CurSub '-' CurSess '-' CurRun '-selected-' dat.label{conf.mkregr.automaticchans(r)}];
             title(savename);
             if ~exist(conf.mkregr.automaticdir);mkdir(conf.mkregr.automaticdir);end
             saveas(gcf,fullfile(conf.mkregr.automaticdir,savename),'jpg');
