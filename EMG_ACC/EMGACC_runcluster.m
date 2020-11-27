@@ -1,4 +1,4 @@
-function EMGACC_runcluster(Task)
+ function EMGACC_runcluster(Task)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
 
 % Dependencies
@@ -35,8 +35,8 @@ addpath(genpath('/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Phys
 % NOTE: It is required to run FARM before anything else, even processing of
 % ACC only. This is because FARM calls eeglab-functions that puts the data
 % into a specific format.
-conf.todo.Farm               = false; %Do you want to run Farm
-conf.todo.Frequency_analysis = true; %Do you want to run frequency analysis
+conf.todo.Farm               = true; %Do you want to run Farm
+conf.todo.Frequency_analysis = false; %Do you want to run frequency analysis
 conf.todo.prepemg            = true; %When doing frequency analysis, do you want to prepair emg using: pf_emg_raw2regr_prepemg
 conf.todo.mkregressor        = true; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
@@ -129,7 +129,7 @@ for n = 1:numel(Sub)
     vhdr    = cellstr(spm_select('List', conf.dir.root, [Sub{n}, '.*task-', Task, '.*_eeg.vhdr$']));
     if isempty(vmrk{1}) || isempty(eeg{1}) || isempty(vhdr{1})
         Sel(n) = false;
-        fprintf('Skipping sub-%s with no vmrk/eeg/vhdr files \n', Sub{n})
+        fprintf('Skipping %s with no vmrk/eeg/vhdr files \n', Sub{n})
     end
 end
 
