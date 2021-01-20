@@ -35,10 +35,10 @@ addpath(genpath('/home/sysneu/marjoh/scripts/Personalized-Parkinson-Project-Phys
 % NOTE: It is required to run FARM before anything else, even processing of
 % ACC only. This is because FARM calls eeglab-functions that puts the data
 % into a specific format.
-conf.todo.Farm               = true; %Do you want to run Farm
-conf.todo.Frequency_analysis = false; %Do you want to run frequency analysis
+conf.todo.Farm               = false; %Do you want to run Farm
+conf.todo.Frequency_analysis = true; %Do you want to run frequency analysis
 conf.todo.prepemg            = true; %When doing frequency analysis, do you want to prepair emg using: pf_emg_raw2regr_prepemg
-conf.todo.mkregressor        = true; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
+conf.todo.mkregressor        = false; %When doing frequency analysis, do you want to make a regressor using: pf_emg_raw2regr_mkregr
 conf.todo.ACC                = true; %Do you want analyse the Accelerometer
 
 %Task Settings:
