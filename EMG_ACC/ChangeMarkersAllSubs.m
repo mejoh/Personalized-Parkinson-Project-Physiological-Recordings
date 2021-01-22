@@ -1,13 +1,15 @@
 function ChangeMarkersAllSubs(Task, ProjectNr, Subset, Force)
 % Task = 'motor' / 'reward' / 'rest';                 % From which task do you want to process data
 % ProjectNr = '3022026.01';       % From which subjects do you want to process subjects
+% Subset = number; % double indicating number of subjects to be processed
+% Force = true/false %true=reanalyze already processed subjects, false=skip already proccessed subjects, if left empty default = false
 
 %% ToDo
 %Improve descriptions
 %Improve error handling
 %Task = rest errors after a few subjects
 
-if isempty(Force) || ~istrue(Force)
+if isempty(Force)
     Force = false;
 end
 
@@ -39,8 +41,8 @@ elseif strcmp(Task, "reward")
     settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "reward");                 %Output folder for the new files
 elseif strcmp(Task, "rest")
     settings.TR         = 0.735;                                                                %double with TR time in seconds
-    settings.Scan = '^sub-.*task-rest_acq-MB8.*nii.gz$';      %Regular expression used to search for relevant image
-    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "EMG", "rest");                 %Output folder for the new files
+    settings.Scan = '^sub-.*task-rest_acq-MB8.*bold.*nii.gz$';      %Regular expression used to search for relevant image
+    settings.NewFolder  = fullfile(pfProject, "3022026.01", "analyses", "kevin", "Freek-PDresttremor","Corrected_BVAfiles");                 %Output folder for the new files
 end
 
 %% Execution
@@ -63,7 +65,7 @@ for n = 1:numel(Sub)
         fprintf('Skipping %s without fmri or without beh data for task \n', Sub{n})
     end
 end
-% Exclude subejcts that do not have eeg data
+% Exclude subjects that do not have eeg data
 for n = 1:numel(Sub)
     cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
     for i = 1:numel(cSessions)
@@ -78,7 +80,7 @@ for n = 1:numel(Sub)
 end
 
 %Exclude subjects that have already been processed
-if ~istrue(Force)
+if ~Force
 for n = 1:numel(Sub)
     cSessions = cellstr(spm_select('List', fullfile(pBIDSDir, Sub{n}), 'dir', 'ses-Visit[0-9]'));
     for i = 1:numel(cSessions)
