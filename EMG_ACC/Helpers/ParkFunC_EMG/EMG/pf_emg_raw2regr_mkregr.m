@@ -180,8 +180,9 @@ for a = 1:nFiles
             mean_powspctrm =   nanmean(tosearch.powspctrm,3);
             [r,c] = find(mean_powspctrm == max(mean_powspctrm(:)));
 
-            %plot for visual checking
-            figure('units','normalized','outerposition',[0 0 1 1]);
+            %plot powerspectrum for visual checking
+            figure('units','normalized','outerposition',[0 0 1 0.5]);
+            subplot(1,4,1)
             hold on
             for i=1:length(conf.mkregr.automaticchans)
             plot(tosearch.freq,nanmean(squeeze(tosearch.powspctrm(i,:,:)),2))
@@ -189,13 +190,20 @@ for a = 1:nFiles
             plot(tosearch.freq(c),max(mean_powspctrm(:)),'or','LineWidth',5 )
             hold off
             legend(dat.label(conf.mkregr.automaticchans))
-            ylabel('Power');xlabel('Frequency')
-            
+            ylabel('Power');xlabel('Frequency');
+
+            subplot(1,4,2:4)
+            imagesc(dat.time/conf.prepemg.tr,dat.freq,squeeze(dat.powspctrm(conf.mkregr.automaticchans(r),:,:)));
+            caxis([0 max(mean_powspctrm(:))*1.5]); %adjust colorscale to 1.5 * max power in average powerspectrum
+            ax = gca; ax.YDir = 'normal'; % change y-axis increasing bottom to top
+            ylabel('Frequency (Hz)');xlabel('Time (scans)');
+            colorbar;
+                      
             savename = [CurSub '-' CurSess '-' CurRun '-selected-' dat.label{conf.mkregr.automaticchans(r)}];
-            title(savename);
-            if ~exist(conf.mkregr.automaticdir);mkdir(conf.mkregr.automaticdir);end
+            suptitle(savename);
+            if ~exist(conf.mkregr.automaticdir,'dir'); mkdir(conf.mkregr.automaticdir);end
             saveas(gcf,fullfile(conf.mkregr.automaticdir,savename),'jpg');
-                                    
+
             % select corresponding powerpectrum info
             dat.label = dat.label(conf.mkregr.automaticchans(r));
             nFreq = 1;
