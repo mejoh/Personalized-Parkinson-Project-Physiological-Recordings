@@ -200,7 +200,7 @@ for a = 1:nFiles
             colorbar;
                       
             savename = [CurSub '-' CurSess '-' CurRun '-selected-' dat.label{conf.mkregr.automaticchans(r)}];
-            suptitle(savename);
+            subtitle(savename);
             if ~exist(conf.mkregr.automaticdir,'dir'); mkdir(conf.mkregr.automaticdir);end
             saveas(gcf,fullfile(conf.mkregr.automaticdir,savename),'jpg');
 
